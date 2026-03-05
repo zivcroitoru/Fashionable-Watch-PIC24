@@ -37,7 +37,10 @@
       <logicalFolder name="SmartWatch"
                      displayName="FashionableWatch"
                      projectFiles="true">
-        <itemPath>FashionableWatch/c/watch.c</itemPath>
+        <itemPath>FashionableWatch/display_manager.c</itemPath>
+        <itemPath>FashionableWatch/input_handler.c</itemPath>
+        <itemPath>FashionableWatch/time_engine.c</itemPath>
+        <itemPath>FashionableWatch/watch.c</itemPath>
       </logicalFolder>
       <logicalFolder name="i2cDriver" displayName="i2cDriver" projectFiles="true">
         <itemPath>i2cDriver/i2c1_driver.c</itemPath>

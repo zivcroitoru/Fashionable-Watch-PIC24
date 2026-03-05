@@ -1,17 +1,29 @@
 #include "FashionableWatch/h/watch.h"
-#include <xc.h>
+#include "System/system.h"
 
-int main(void) {
-    init_all(); 
-    __builtin_enable_interrupts(); // ADD THIS LINE
+int main(void)
+{
+    init_all();
 
-    while(1) {
-        check_inputs();         //
-        check_gestures();       
-        update_display();       //
-        check_alarm_timeout();  //
+    while (1)
+    {
+        check_inputs();
+        check_gestures();
 
-        // ADD THIS: Wait 50-100ms so the screen isn't overwhelmed
+        if (g_force_redraw)
+        {
+            update_display();
+            g_force_redraw = false;
+        }
+
+        if (g_tick_1s)
+        {
+            g_tick_1s = false;
+
+            update_display();
+            check_alarm_timeout();
+        }
     }
+
     return 0;
 }
