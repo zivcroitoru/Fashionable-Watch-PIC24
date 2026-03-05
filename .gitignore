@@ -1,8 +1,26 @@
-*.flag
+# --- MPLAB X Output Directories ---
+build/
+dist/
+disassembly/
+debug/
+
+# --- Local IDE Configuration (Keep these private) ---
+nbproject/private/
+nbproject/Makefile-*
+nbproject/Package-*
+
+# --- Compiler & Linker Files ---
 *.o
-*.d
-*.xml
 *.elf
-*.map
 *.hex
-*.mk
+*.cof
+*.aslv
+*.map
+*.p1
+*.d
+*.pre
+*.sym
+
+# --- Windows / System Files ---
+Thumbs.db
+.DS_Store
