@@ -4,7 +4,7 @@
 #include "../oledDriver/oledC_shapes.h" 
 #include "../oledDriver/oledC_colors.h" 
 
-#include <xc.h>st
+#include <xc.h>
 
 void init_all(void) {
     SYSTEM_Initialize();

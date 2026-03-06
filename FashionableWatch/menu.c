@@ -1,33 +1,74 @@
 #include "h/menu.h"
+#include "h/menu_pages.h"
+#include "h/watch.h"
+
 #include "../oledDriver/oledC.h"
 #include "../oledDriver/oledC_shapes.h"
+
 #include <stdbool.h>
 #include <stdint.h>
 
-// --- 1. VARIABLE DEFINITIONS ---
-int8_t menu_cursor_index = 0;
-WatchState current_state = STATE_MAIN_MENU;
+#define MENU_TITLE_X        2
+#define MENU_TITLE_Y        2
 
-// Menu text array
-const char* main_menu_items[5] = {
-    "Display Mode",
-    "12H/24H Interval",
-    "Set Time",
-    "Set Date",
-    "Alarm"
-};
+#define MENU_X              0
+#define MENU_Y_START        28
+#define ITEM_HEIGHT         12
+#define MENU_WIDTH          95
 
-// --- 2. INTERNAL UI CONSTANTS ---
-#define MENU_X          0
-#define MENU_Y_START    25
-#define ITEM_HEIGHT     12
-#define MENU_WIDTH      95
-#define MENU_ITEM_COUNT 5
+#define MENU_TITLE_CLEAR_X2 44
+#define MENU_TITLE_CLEAR_Y2 20
+#define MENU_BODY_TOP       24
+#define MENU_BODY_BOTTOM    95
 
-// Keeps track of what row was last highlighted on screen
+static MenuPage current_page = MENU_PAGE_MAIN;
+static int8_t menu_cursor_index = 0;
+
 static int8_t last_drawn_cursor = -1;
+static MenuPage last_drawn_page = (MenuPage)255;
 
-// Draw one menu row only
+static uint8_t menu_get_count_for_page(MenuPage page)
+{
+    switch (page)
+    {
+        case MENU_PAGE_MAIN:     return menu_main_get_count();
+        case MENU_PAGE_DISPLAY:  return menu_display_get_count();
+        case MENU_PAGE_FORMAT:   return menu_format_get_count();
+        case MENU_PAGE_SET_TIME: return menu_set_time_get_count();
+        case MENU_PAGE_SET_DATE: return menu_set_date_get_count();
+        case MENU_PAGE_ALARM:    return menu_alarm_get_count();
+        default:                 return 0;
+    }
+}
+
+static const char* menu_get_item_for_page(MenuPage page, uint8_t index)
+{
+    switch (page)
+    {
+        case MENU_PAGE_MAIN:     return menu_main_get_item(index);
+        case MENU_PAGE_DISPLAY:  return menu_display_get_item(index);
+        case MENU_PAGE_FORMAT:   return menu_format_get_item(index);
+        case MENU_PAGE_SET_TIME: return menu_set_time_get_item(index);
+        case MENU_PAGE_SET_DATE: return menu_set_date_get_item(index);
+        case MENU_PAGE_ALARM:    return menu_alarm_get_item(index);
+        default:                 return "";
+    }
+}
+
+static void menu_select_for_page(MenuPage page, uint8_t index)
+{
+    switch (page)
+    {
+        case MENU_PAGE_MAIN:     menu_main_on_select(index);     break;
+        case MENU_PAGE_DISPLAY:  menu_display_on_select(index);  break;
+        case MENU_PAGE_FORMAT:   menu_format_on_select(index);   break;
+        case MENU_PAGE_SET_TIME: menu_set_time_on_select(index); break;
+        case MENU_PAGE_SET_DATE: menu_set_date_on_select(index); break;
+        case MENU_PAGE_ALARM:    menu_alarm_on_select(index);    break;
+        default: break;
+    }
+}
+
 static void menu_draw_row(uint8_t index, bool selected)
 {
     uint16_t bg_color       = 0x0000;
@@ -35,56 +76,136 @@ static void menu_draw_row(uint8_t index, bool selected)
     uint16_t highlight_bg   = 0xFFFF;
     uint16_t highlight_text = 0x0000;
 
-    uint8_t y_pos = MENU_Y_START + (index * ITEM_HEIGHT);
+    uint8_t y = MENU_Y_START + (index * ITEM_HEIGHT);
+    const char* label = menu_get_item_for_page(current_page, index);
 
-    // Clear only this row
-    oledC_DrawRectangle(MENU_X,
-                        y_pos,
-                        MENU_X + MENU_WIDTH,
-                        y_pos + (ITEM_HEIGHT - 1),
-                        selected ? highlight_bg : bg_color);
+    oledC_DrawRectangle(
+        MENU_X,
+        y,
+        MENU_X + MENU_WIDTH,
+        y + (ITEM_HEIGHT - 1),
+        selected ? highlight_bg : bg_color
+    );
 
-    // Draw row text
-    oledC_DrawString(MENU_X + 2,
-                     y_pos + 2,
-                     1,
-                     1,
-                     (uint8_t*)main_menu_items[index],
-                     selected ? highlight_text : text_color);
+    oledC_DrawString(
+        MENU_X + 2,
+        y + 2,
+        1,
+        1,
+        (uint8_t*)label,
+        selected ? highlight_text : text_color
+    );
 }
 
-// Call this when entering the menu or after a full-screen clear
 void menu_reset_draw_cache(void)
 {
     last_drawn_cursor = -1;
+    last_drawn_page = (MenuPage)255;
 }
 
-void menu_draw_main_list(void)
+void menu_enter(void)
 {
-    // First draw after entering menu: draw all rows
-    if (last_drawn_cursor < 0 || last_drawn_cursor >= MENU_ITEM_COUNT)
+    myState = STATE_MENU;
+    current_page = MENU_PAGE_MAIN;
+    menu_cursor_index = 0;
+    menu_reset_draw_cache();
+    g_force_redraw = true;
+}
+
+void menu_exit(void)
+{
+    myState = STATE_CLOCK;
+    current_page = MENU_PAGE_MAIN;
+    menu_cursor_index = 0;
+    menu_reset_draw_cache();
+    g_force_redraw = true;
+}
+
+void menu_next_item(void)
+{
+    uint8_t count = menu_get_count_for_page(current_page);
+
+    if (count == 0)
+        return;
+
+    menu_cursor_index++;
+    if (menu_cursor_index >= count)
+        menu_cursor_index = 0;
+
+    g_force_redraw = true;
+}
+
+void menu_select_current(void)
+{
+    menu_select_for_page(current_page, (uint8_t)menu_cursor_index);
+    g_force_redraw = true;
+}
+
+MenuPage menu_get_current_page(void)
+{
+    return current_page;
+}
+
+void menu_set_current_page(MenuPage page)
+{
+    current_page = page;
+    menu_cursor_index = 0;
+    menu_reset_draw_cache();
+    g_force_redraw = true;
+}
+
+int8_t menu_get_cursor(void)
+{
+    return menu_cursor_index;
+}
+
+void menu_set_cursor(int8_t index)
+{
+    menu_cursor_index = index;
+    g_force_redraw = true;
+}
+
+const char* menu_get_title(void)
+{
+    switch (current_page)
     {
-        for (uint8_t i = 0; i < MENU_ITEM_COUNT; i++)
+        case MENU_PAGE_MAIN:     return "MENU";
+        case MENU_PAGE_DISPLAY:  return "DISPLAY";
+        case MENU_PAGE_FORMAT:   return "FORMAT";
+        case MENU_PAGE_SET_TIME: return "SET TIME";
+        case MENU_PAGE_SET_DATE: return "SET DATE";
+        case MENU_PAGE_ALARM:    return "ALARM";
+        default:                 return "MENU";
+    }
+}
+
+void menu_draw(void)
+{
+    bool page_changed = (current_page != last_drawn_page);
+    uint8_t count = menu_get_count_for_page(current_page);
+
+    if (page_changed || last_drawn_cursor < 0)
+    {
+        oledC_DrawRectangle(0, 0, MENU_TITLE_CLEAR_X2, MENU_TITLE_CLEAR_Y2, 0x0000);
+        oledC_DrawRectangle(0, MENU_BODY_TOP, 95, MENU_BODY_BOTTOM, 0x0000);
+
+        oledC_DrawString(MENU_TITLE_X, MENU_TITLE_Y, 1, 1, (uint8_t*)menu_get_title(), 0xFFFF);
+
+        for (uint8_t i = 0; i < count; i++)
         {
-            menu_draw_row(i, (i == menu_cursor_index));
+            menu_draw_row(i, (i == (uint8_t)menu_cursor_index));
         }
     }
-    // Cursor moved: redraw only old row + new row
     else if (last_drawn_cursor != menu_cursor_index)
     {
         menu_draw_row((uint8_t)last_drawn_cursor, false);
         menu_draw_row((uint8_t)menu_cursor_index, true);
     }
-    // Same cursor, but forced redraw
     else
     {
         menu_draw_row((uint8_t)menu_cursor_index, true);
     }
 
     last_drawn_cursor = menu_cursor_index;
-}
-
-void menu_draw(void)
-{
-    menu_draw_main_list();
+    last_drawn_page = current_page;
 }
