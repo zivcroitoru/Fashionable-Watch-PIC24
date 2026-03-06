@@ -2,7 +2,9 @@
 #include "../System/system.h"
 #include "../oledDriver/oledC.h"
 #include "../oledDriver/oledC_shapes.h" 
-#include <xc.h>
+#include "../oledDriver/oledC_colors.h" 
+
+#include <xc.h>st
 
 void init_all(void) {
     SYSTEM_Initialize();
