@@ -6,6 +6,8 @@
 
 #include <xc.h>
 
+uint8_t analogTheme = 0;
+
 void init_all(void) {
     SYSTEM_Initialize();
     oledC_setup();

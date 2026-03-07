@@ -13,6 +13,11 @@ uint8_t menu_display_get_count(void);
 const char* menu_display_get_item(uint8_t index);
 void menu_display_on_select(uint8_t index);
 
+// Analog Theme
+uint8_t menu_analog_theme_get_count(void);
+const char* menu_analog_theme_get_item(uint8_t index);
+void menu_analog_theme_on_select(uint8_t index);
+
 // Format
 uint8_t menu_format_get_count(void);
 const char* menu_format_get_item(uint8_t index);

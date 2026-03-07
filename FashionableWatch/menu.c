@@ -31,27 +31,28 @@ static uint8_t menu_get_count_for_page(MenuPage page)
 {
     switch (page)
     {
-        case MENU_PAGE_MAIN:     return menu_main_get_count();
-        case MENU_PAGE_DISPLAY:  return menu_display_get_count();
-        case MENU_PAGE_FORMAT:   return menu_format_get_count();
-        case MENU_PAGE_SET_TIME: return menu_set_time_get_count();
-        case MENU_PAGE_SET_DATE: return menu_set_date_get_count();
-        case MENU_PAGE_ALARM:    return menu_alarm_get_count();
-        default:                 return 0;
+        case MENU_PAGE_MAIN:         return menu_main_get_count();
+        case MENU_PAGE_DISPLAY:      return menu_display_get_count();
+        case MENU_PAGE_ANALOG_THEME: return menu_analog_theme_get_count();
+        case MENU_PAGE_FORMAT:       return menu_format_get_count();
+        case MENU_PAGE_SET_TIME:     return menu_set_time_get_count();
+        case MENU_PAGE_SET_DATE:     return menu_set_date_get_count();
+        case MENU_PAGE_ALARM:        return menu_alarm_get_count();
+        default:                     return 0;
     }
 }
-
 static const char* menu_get_item_for_page(MenuPage page, uint8_t index)
 {
     switch (page)
     {
-        case MENU_PAGE_MAIN:     return menu_main_get_item(index);
-        case MENU_PAGE_DISPLAY:  return menu_display_get_item(index);
-        case MENU_PAGE_FORMAT:   return menu_format_get_item(index);
-        case MENU_PAGE_SET_TIME: return menu_set_time_get_item(index);
-        case MENU_PAGE_SET_DATE: return menu_set_date_get_item(index);
-        case MENU_PAGE_ALARM:    return menu_alarm_get_item(index);
-        default:                 return "";
+        case MENU_PAGE_MAIN:         return menu_main_get_item(index);
+        case MENU_PAGE_DISPLAY:      return menu_display_get_item(index);
+        case MENU_PAGE_ANALOG_THEME: return menu_analog_theme_get_item(index);
+        case MENU_PAGE_FORMAT:       return menu_format_get_item(index);
+        case MENU_PAGE_SET_TIME:     return menu_set_time_get_item(index);
+        case MENU_PAGE_SET_DATE:     return menu_set_date_get_item(index);
+        case MENU_PAGE_ALARM:        return menu_alarm_get_item(index);
+        default:                     return "";
     }
 }
 
@@ -59,12 +60,13 @@ static void menu_select_for_page(MenuPage page, uint8_t index)
 {
     switch (page)
     {
-        case MENU_PAGE_MAIN:     menu_main_on_select(index);     break;
-        case MENU_PAGE_DISPLAY:  menu_display_on_select(index);  break;
-        case MENU_PAGE_FORMAT:   menu_format_on_select(index);   break;
-        case MENU_PAGE_SET_TIME: menu_set_time_on_select(index); break;
-        case MENU_PAGE_SET_DATE: menu_set_date_on_select(index); break;
-        case MENU_PAGE_ALARM:    menu_alarm_on_select(index);    break;
+        case MENU_PAGE_MAIN:         menu_main_on_select(index);         break;
+        case MENU_PAGE_DISPLAY:      menu_display_on_select(index);      break;
+        case MENU_PAGE_ANALOG_THEME: menu_analog_theme_on_select(index); break;
+        case MENU_PAGE_FORMAT:       menu_format_on_select(index);       break;
+        case MENU_PAGE_SET_TIME:     menu_set_time_on_select(index);     break;
+        case MENU_PAGE_SET_DATE:     menu_set_date_on_select(index);     break;
+        case MENU_PAGE_ALARM:        menu_alarm_on_select(index);        break;
         default: break;
     }
 }
@@ -169,13 +171,14 @@ const char* menu_get_title(void)
 {
     switch (current_page)
     {
-        case MENU_PAGE_MAIN:     return "MENU";
-        case MENU_PAGE_DISPLAY:  return "DISPLAY";
-        case MENU_PAGE_FORMAT:   return "FORMAT";
-        case MENU_PAGE_SET_TIME: return "SET TIME";
-        case MENU_PAGE_SET_DATE: return "SET DATE";
-        case MENU_PAGE_ALARM:    return "ALARM";
-        default:                 return "MENU";
+        case MENU_PAGE_MAIN:         return "MENU";
+        case MENU_PAGE_DISPLAY:      return "DISPLAY";
+        case MENU_PAGE_ANALOG_THEME: return "ANALOG";
+        case MENU_PAGE_FORMAT:       return "FORMAT";
+        case MENU_PAGE_SET_TIME:     return "SET TIME";
+        case MENU_PAGE_SET_DATE:     return "SET DATE";
+        case MENU_PAGE_ALARM:        return "ALARM";
+        default:                     return "MENU";
     }
 }
 

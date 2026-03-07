@@ -10,6 +10,7 @@ volatile WatchTime now = {0,0,12,1,1};
 WatchTime alarmTime = {0,30,7,1,1};
 bool alarmEnabled = true;
 
+
 volatile uint32_t ms_ticks = 0;
 
 volatile bool g_tick_1s = false;

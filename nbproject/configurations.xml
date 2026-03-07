@@ -53,6 +53,7 @@
         <itemPath>FashionableWatch/menu_set_date.c</itemPath>
         <itemPath>FashionableWatch/menu_set_time.c</itemPath>
         <itemPath>FashionableWatch/menu_format.c</itemPath>
+        <itemPath>FashionableWatch/menu_analog_theme.c</itemPath>
       </logicalFolder>
       <logicalFolder name="i2cDriver" displayName="i2cDriver" projectFiles="true">
         <itemPath>i2cDriver/i2c1_driver.c</itemPath>

@@ -24,6 +24,7 @@ extern volatile uint32_t ms_ticks;
 extern volatile bool g_tick_1s;
 extern volatile bool g_force_redraw;
 
+extern uint8_t analogTheme;
 extern bool alarmEnabled;
 extern WatchTime alarmTime;
 

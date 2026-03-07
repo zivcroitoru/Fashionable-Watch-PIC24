@@ -24,8 +24,7 @@ const char* menu_display_get_item(uint8_t index)
             return row1;
 
         case 2:
-            sprintf(row2, "Analog  [%c]", (myFace == FACE_ANALOG) ? 'X' : ' ');
-            return row2;
+            return "Analog >";
 
         default:
             return "";
@@ -46,8 +45,7 @@ void menu_display_on_select(uint8_t index)
             break;
 
         case 2:
-            myFace = FACE_ANALOG;
-            g_force_redraw = true;
+            menu_set_current_page(MENU_PAGE_ANALOG_THEME);
             break;
 
         default:
