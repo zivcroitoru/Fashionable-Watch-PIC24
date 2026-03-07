@@ -70,7 +70,6 @@ static void menu_select_for_page(MenuPage page, uint8_t index)
         default: break;
     }
 }
-
 static void menu_draw_row(uint8_t index, bool selected)
 {
     uint16_t bg_color       = 0x0000;
@@ -81,22 +80,17 @@ static void menu_draw_row(uint8_t index, bool selected)
     uint8_t y = MENU_Y_START + (index * ITEM_HEIGHT);
     const char* label = menu_get_item_for_page(current_page, index);
 
-    oledC_DrawRectangle(
-        MENU_X,
-        y,
-        MENU_X + MENU_WIDTH,
-        y + (ITEM_HEIGHT - 1),
-        selected ? highlight_bg : bg_color
-    );
-
-    oledC_DrawString(
-        MENU_X + 2,
-        y + 2,
-        1,
-        1,
-        (uint8_t*)label,
-        selected ? highlight_text : text_color
-    );
+    if (selected) {
+        // Draw SOLID white box for the background of the selected item
+        oledC_DrawRectangle(MENU_X, y, MENU_X + MENU_WIDTH, y + (ITEM_HEIGHT - 1), highlight_bg);
+        // Draw BLACK text on top of the white box
+        oledC_DrawString(MENU_X + 2, y + 2, 1, 1, (uint8_t*)label, highlight_text);
+    } else {
+        // Draw SOLID black box to clear the area
+        oledC_DrawRectangle(MENU_X, y, MENU_X + MENU_WIDTH, y + (ITEM_HEIGHT - 1), bg_color);
+        // Draw WHITE text
+        oledC_DrawString(MENU_X + 2, y + 2, 1, 1, (uint8_t*)label, text_color);
+    }
 }
 
 void menu_reset_draw_cache(void)
@@ -151,7 +145,12 @@ MenuPage menu_get_current_page(void)
 void menu_set_current_page(MenuPage page)
 {
     current_page = page;
-    menu_cursor_index = 0;
+
+    if (page == MENU_PAGE_SET_TIME)
+        menu_cursor_index = 1;   // start on HOURS
+    else
+        menu_cursor_index = 0;
+
     menu_reset_draw_cache();
     g_force_redraw = true;
 }
@@ -184,9 +183,21 @@ const char* menu_get_title(void)
 
 void menu_draw(void)
 {
+    // --- CUSTOM LAYOUT CHECK ---
+if (current_page == MENU_PAGE_SET_TIME)
+{
+    menu_set_time_update_from_pot();
+    menu_set_time_custom_draw();
+
+    last_drawn_cursor = menu_cursor_index;
+    last_drawn_page = current_page;
+    return;
+}
+
+    // --- STANDARD LIST MENU DRAWING ---
     bool page_changed = (current_page != last_drawn_page);
     uint8_t count = menu_get_count_for_page(current_page);
-
+    
     if (page_changed || last_drawn_cursor < 0)
     {
         oledC_DrawRectangle(0, 0, MENU_TITLE_CLEAR_X2, MENU_TITLE_CLEAR_Y2, 0x0000);

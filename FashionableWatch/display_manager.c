@@ -11,6 +11,7 @@ extern bool alarmEnabled;
 static WatchTime last_drawn = {255,255,255,255,255};
 static AppState last_state = (AppState)255;
 
+
 void draw_alarm_star(uint16_t color)
 {
     // center at (6,6)

@@ -27,6 +27,7 @@ void menu_format_on_select(uint8_t index);
 uint8_t menu_set_time_get_count(void);
 const char* menu_set_time_get_item(uint8_t index);
 void menu_set_time_on_select(uint8_t index);
+void menu_set_time_update_from_pot(void);
 
 // Set Date
 uint8_t menu_set_date_get_count(void);

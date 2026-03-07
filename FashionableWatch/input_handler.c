@@ -1,6 +1,7 @@
 #include "h/watch.h"
 #include "h/menu.h"
 #include <xc.h>
+#include "./../Accel_i2c.h"
 
 #define LONG_PRESS_MS 2000
 
@@ -75,5 +76,30 @@ void check_inputs(void)
 
 void check_gestures(void)
 {
-    // Placeholder
+    unsigned char xl, xh, yl, yh, zl, zh;
+    int16_t x, y, z;
+
+    if (i2cReadSlaveRegister(0x3A, 0x32, &xl) != OK) return;
+    if (i2cReadSlaveRegister(0x3A, 0x33, &xh) != OK) return;
+    if (i2cReadSlaveRegister(0x3A, 0x34, &yl) != OK) return;
+    if (i2cReadSlaveRegister(0x3A, 0x35, &yh) != OK) return;
+    if (i2cReadSlaveRegister(0x3A, 0x36, &zl) != OK) return;
+    if (i2cReadSlaveRegister(0x3A, 0x37, &zh) != OK) return;
+
+    x = (int16_t)(((uint16_t)xh << 8) | xl);
+    y = (int16_t)(((uint16_t)yh << 8) | yl);
+    z = (int16_t)(((uint16_t)zh << 8) | zl);
+
+    // Very simple debug test:
+    // LED1 ON when motion is detected
+    if ((x > 30 || x < -30) ||
+        (y > 30 || y < -30) ||
+        (z > 30 || z < -30))
+    {
+        LATAbits.LATA0 = 1;
+    }
+    else
+    {
+        LATAbits.LATA0 = 0;
+    }
 }

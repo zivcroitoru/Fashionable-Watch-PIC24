@@ -7,23 +7,26 @@ int main(void)
 
     while (1)
     {
-        check_inputs();
-        check_gestures();
-
-        if (g_force_redraw)
-        {
-            update_display();
-            g_force_redraw = false;
-        }
-
-        if (g_tick_1s)
-        {
-            g_tick_1s = false;
-
-            update_display();
-            check_alarm_timeout();
-        }
-    }
+        accel_debug_display();
+//        pot_update();
+//        check_inputs();
+//        check_gestures();
+//
+//        if (g_force_redraw)
+//        {
+//            update_display();
+//            g_force_redraw = false;
+//        }
+//
+//        if (g_tick_1s)
+//        {
+//            g_tick_1s = false;
+//
+//            update_display();
+//            check_alarm_timeout();
+//        }
+//    }
 
     return 0;
+}
 }
