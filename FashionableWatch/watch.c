@@ -30,7 +30,6 @@ static void show_init_error(const char* msg)
 // ============================================================================
 // POTENTIOMETER UPDATE
 // ============================================================================
-
 void pot_update(void)
 {
     static uint16_t prevVal = 0;
@@ -47,8 +46,28 @@ void pot_update(void)
     if (currVal > prevVal + 5 || currVal < prevVal - 5)
     {
         g_pot_value = currVal;
-        menu_set_time_update_from_pot();
         prevVal = currVal;
+
+        if (myState == STATE_MENU)
+        {
+            switch (menu_get_current_page())
+            {
+                case MENU_PAGE_SET_TIME:
+                    menu_set_time_update_from_pot();
+                    break;
+
+                case MENU_PAGE_SET_DATE:
+                    menu_set_date_update_from_pot();
+                    break;
+
+                case MENU_PAGE_ALARM:
+                    menu_alarm_update_from_pot();
+                    break;
+
+                default:
+                    break;
+            }
+        }
     }
 }
 

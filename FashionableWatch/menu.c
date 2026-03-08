@@ -184,13 +184,18 @@ const char* menu_get_title(void)
 void menu_draw(void)
 {
     // --- CUSTOM LAYOUT CHECK ---
-if (current_page == MENU_PAGE_SET_TIME)
-{
-    menu_set_time_update_from_pot();
+if (current_page == MENU_PAGE_SET_TIME) {
     menu_set_time_custom_draw();
+    return;
+}
 
-    last_drawn_cursor = menu_cursor_index;
-    last_drawn_page = current_page;
+if (current_page == MENU_PAGE_SET_DATE) {
+    menu_set_date_custom_draw();
+    return;
+}
+
+if (current_page == MENU_PAGE_ALARM) {
+    menu_alarm_custom_draw();
     return;
 }
 

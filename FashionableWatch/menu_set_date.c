@@ -1,79 +1,81 @@
 #include "h/menu_pages.h"
 #include "h/menu.h"
 #include "h/watch.h"
-
-#include <stdio.h>
+#include "h/menu_editor.h"
+#include <stdbool.h>
+#include <stdint.h>
 
 extern volatile WatchTime now;
+extern volatile uint16_t g_pot_value;
+extern volatile bool g_force_redraw;
 
-static uint8_t local_get_days_in_month(uint8_t month)
+static MenuEditField date_fields[] =
 {
-    switch (month)
     {
-        case 2:  return 28;
-        case 4:
-        case 6:
-        case 9:
-        case 11: return 30;
-        default: return 31;
+        "Month", FIELD_TYPE_RANGE, (uint8_t*)&now.month, 0,
+        1, 12, 30,
+        12, 35, 40, 57,
+        14, 40, 1, 1
+    },
+    {
+        "Day", FIELD_TYPE_RANGE, (uint8_t*)&now.day, 0,
+        1, 31, 15,
+        50, 35, 80, 57,
+        55, 40, 1, 1
     }
-}
+};
+
+static MenuEditorState date_editor =
+{
+    date_fields,
+    2,
+    "BACK",
+    25, 80, 70, 95,
+    35, 84,
+    "SET DATE",
+    0, -1, 0, 0, 0, "",
+    true, -1
+};
 
 uint8_t menu_set_date_get_count(void)
 {
-    return 3;
+    return 3; /* 2 fields + back */
 }
 
 const char* menu_set_date_get_item(uint8_t index)
 {
-    static char row1[24];
-    static char row2[24];
+    (void)index;
+    return "";
+}
 
-    switch (index)
-    {
-        case 0:
-            return "< Back";
-
-        case 1:
-            sprintf(row1, "Day +   (%02u)", now.day);
-            return row1;
-
-        case 2:
-            sprintf(row2, "Month + (%02u)", now.month);
-            return row2;
-
-        default:
-            return "";
-    }
+void menu_set_date_reset_state(void)
+{
+    menu_editor_reset(&date_editor);
 }
 
 void menu_set_date_on_select(uint8_t index)
 {
-    switch (index)
-    {
-        case 0:
-            menu_set_current_page(MENU_PAGE_MAIN);
-            break;
+    bool go_back = false;
 
-        case 1:
-            now.day++;
-            if (now.day > local_get_days_in_month(now.month))
-                now.day = 1;
-            g_force_redraw = true;
-            break;
+    menu_editor_on_select(&date_editor, index, &go_back);
 
-        case 2:
-            now.month++;
-            if (now.month > 12)
-                now.month = 1;
-
-            if (now.day > local_get_days_in_month(now.month))
-                now.day = local_get_days_in_month(now.month);
-
-            g_force_redraw = true;
-            break;
-
-        default:
-            break;
+    if (go_back) {
+        menu_editor_reset(&date_editor);
+        menu_set_current_page(MENU_PAGE_MAIN);
+        return;
     }
+
+    menu_set_cursor((index + 1) % menu_set_date_get_count());
+    g_force_redraw = true;
+}
+
+void menu_set_date_update_from_pot(void)
+{
+    menu_editor_update_from_pot(&date_editor, g_pot_value, menu_get_cursor());
+    g_force_redraw = true;
+}
+
+void menu_set_date_custom_draw(void)
+{
+    menu_editor_draw(&date_editor, menu_get_cursor(), &g_force_redraw);
 }
