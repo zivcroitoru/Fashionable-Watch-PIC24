@@ -74,19 +74,19 @@ void menu_editor_reset(MenuEditorState* state)
     state->last_drawn_box = -1;
 }
 
-void menu_editor_update_from_pot(MenuEditorState* state, uint16_t pot_value, int8_t cursor)
+bool menu_editor_update_from_pot(MenuEditorState* state, uint16_t pot_value, int8_t cursor)
 {
     MenuEditField* field;
     int16_t offset;
     int16_t new_val;
 
-    if (!state) return;
+    if (!state) return false;
     if (!state->initialized) {
         menu_editor_init(state);
     }
 
     if (cursor < 0 || cursor >= state->field_count) {
-        return;
+        return false;
     }
 
     field = &state->fields[cursor];
@@ -95,16 +95,11 @@ void menu_editor_update_from_pot(MenuEditorState* state, uint16_t pot_value, int
         state->last_cursor = cursor;
         state->pot_start_val = pot_value;
         state->value_start_val = field->edit_value;
-        return;
+        return false;
     }
 
     if (field->type == FIELD_TYPE_TOGGLE) {
-        offset = ((int16_t)pot_value - (int16_t)state->pot_start_val) / 100;
-        new_val = (offset != 0) ? 1 : 0;
-
-        if ((uint8_t)new_val != field->edit_value) {
-            field->edit_value = (uint8_t)new_val;
-        }
+        return false;
     } else {
         offset = ((int16_t)pot_value - (int16_t)state->pot_start_val) / field->step_div;
         new_val = state->value_start_val + offset;
@@ -112,8 +107,11 @@ void menu_editor_update_from_pot(MenuEditorState* state, uint16_t pot_value, int
 
         if ((uint8_t)new_val != field->edit_value) {
             field->edit_value = (uint8_t)new_val;
+            return true;
         }
     }
+
+    return false;
 }
 
 void menu_editor_on_select(MenuEditorState* state, int8_t cursor, bool* request_back)
@@ -137,6 +135,11 @@ void menu_editor_on_select(MenuEditorState* state, int8_t cursor, bool* request_
     }
 
     field = &state->fields[cursor];
+
+    if (field->type == FIELD_TYPE_TOGGLE) {
+        field->edit_value = field->edit_value ? 0 : 1;
+    }
+
     *(field->value_ptr) = field->edit_value;
 
     state->confirm_msg = "updated";

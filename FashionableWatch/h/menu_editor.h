@@ -72,7 +72,7 @@ void menu_editor_init(MenuEditorState* state);
 void menu_editor_reset(MenuEditorState* state);
 
 /* logic */
-void menu_editor_update_from_pot(MenuEditorState* state, uint16_t pot_value, int8_t cursor);
+bool menu_editor_update_from_pot(MenuEditorState* state, uint16_t pot_value, int8_t cursor);
 void menu_editor_on_select(MenuEditorState* state, int8_t cursor, bool* request_back);
 
 /* draw */

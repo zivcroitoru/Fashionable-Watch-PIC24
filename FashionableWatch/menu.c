@@ -8,16 +8,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define MENU_TITLE_X        2
-#define MENU_TITLE_Y        2
-
 #define MENU_X              0
 #define MENU_Y_START        28
 #define ITEM_HEIGHT         12
 #define MENU_WIDTH          95
 
-#define MENU_TITLE_CLEAR_X2 44
-#define MENU_TITLE_CLEAR_Y2 20
 #define MENU_BODY_TOP       24
 #define MENU_BODY_BOTTOM    95
 
@@ -41,6 +36,7 @@ static uint8_t menu_get_count_for_page(MenuPage page)
         default:                     return 0;
     }
 }
+
 static const char* menu_get_item_for_page(MenuPage page, uint8_t index)
 {
     switch (page)
@@ -70,6 +66,7 @@ static void menu_select_for_page(MenuPage page, uint8_t index)
         default: break;
     }
 }
+
 static void menu_draw_row(uint8_t index, bool selected)
 {
     uint16_t bg_color       = 0x0000;
@@ -81,14 +78,10 @@ static void menu_draw_row(uint8_t index, bool selected)
     const char* label = menu_get_item_for_page(current_page, index);
 
     if (selected) {
-        // Draw SOLID white box for the background of the selected item
         oledC_DrawRectangle(MENU_X, y, MENU_X + MENU_WIDTH, y + (ITEM_HEIGHT - 1), highlight_bg);
-        // Draw BLACK text on top of the white box
         oledC_DrawString(MENU_X + 2, y + 2, 1, 1, (uint8_t*)label, highlight_text);
     } else {
-        // Draw SOLID black box to clear the area
         oledC_DrawRectangle(MENU_X, y, MENU_X + MENU_WIDTH, y + (ITEM_HEIGHT - 1), bg_color);
-        // Draw WHITE text
         oledC_DrawString(MENU_X + 2, y + 2, 1, 1, (uint8_t*)label, text_color);
     }
 }
@@ -146,10 +139,27 @@ void menu_set_current_page(MenuPage page)
 {
     current_page = page;
 
-    if (page == MENU_PAGE_SET_TIME)
-        menu_cursor_index = 1;   // start on HOURS
-    else
-        menu_cursor_index = 0;
+    switch (page)
+    {
+        case MENU_PAGE_SET_TIME:
+            menu_set_time_reset_state();
+            menu_cursor_index = 1;
+            break;
+
+        case MENU_PAGE_SET_DATE:
+            menu_set_date_reset_state();
+            menu_cursor_index = 0;
+            break;
+
+        case MENU_PAGE_ALARM:
+            menu_alarm_reset_state();
+            menu_cursor_index = 0;
+            break;
+
+        default:
+            menu_cursor_index = 0;
+            break;
+    }
 
     menu_reset_draw_cache();
     g_force_redraw = true;
@@ -183,48 +193,51 @@ const char* menu_get_title(void)
 
 void menu_draw(void)
 {
-    // --- CUSTOM LAYOUT CHECK ---
-if (current_page == MENU_PAGE_SET_TIME) {
-    menu_set_time_custom_draw();
-    return;
-}
-
-if (current_page == MENU_PAGE_SET_DATE) {
-    menu_set_date_custom_draw();
-    return;
-}
-
-if (current_page == MENU_PAGE_ALARM) {
-    menu_alarm_custom_draw();
-    return;
-}
-
-    // --- STANDARD LIST MENU DRAWING ---
-    bool page_changed = (current_page != last_drawn_page);
-    uint8_t count = menu_get_count_for_page(current_page);
-    
-    if (page_changed || last_drawn_cursor < 0)
+    // Custom pages: content only
+    if (current_page == MENU_PAGE_SET_TIME)
     {
-        oledC_DrawRectangle(0, 0, MENU_TITLE_CLEAR_X2, MENU_TITLE_CLEAR_Y2, 0x0000);
-        oledC_DrawRectangle(0, MENU_BODY_TOP, 95, MENU_BODY_BOTTOM, 0x0000);
+        menu_set_time_custom_draw();
+        return;
+    }
 
-        oledC_DrawString(MENU_TITLE_X, MENU_TITLE_Y, 1, 1, (uint8_t*)menu_get_title(), 0xFFFF);
+    if (current_page == MENU_PAGE_SET_DATE)
+    {
+        menu_set_date_custom_draw();
+        return;
+    }
 
-        for (uint8_t i = 0; i < count; i++)
+    if (current_page == MENU_PAGE_ALARM)
+    {
+        menu_alarm_custom_draw();
+        return;
+    }
+
+    // Standard list pages: content only
+    {
+        bool page_changed = (current_page != last_drawn_page);
+        uint8_t count = menu_get_count_for_page(current_page);
+        uint8_t i;
+
+        if (page_changed || last_drawn_cursor < 0)
         {
-            menu_draw_row(i, (i == (uint8_t)menu_cursor_index));
-        }
-    }
-    else if (last_drawn_cursor != menu_cursor_index)
-    {
-        menu_draw_row((uint8_t)last_drawn_cursor, false);
-        menu_draw_row((uint8_t)menu_cursor_index, true);
-    }
-    else
-    {
-        menu_draw_row((uint8_t)menu_cursor_index, true);
-    }
+            oledC_DrawRectangle(0, MENU_BODY_TOP, 95, MENU_BODY_BOTTOM, 0x0000);
 
-    last_drawn_cursor = menu_cursor_index;
-    last_drawn_page = current_page;
+            for (i = 0; i < count; i++)
+            {
+                menu_draw_row(i, (i == (uint8_t)menu_cursor_index));
+            }
+        }
+        else if (last_drawn_cursor != menu_cursor_index)
+        {
+            menu_draw_row((uint8_t)last_drawn_cursor, false);
+            menu_draw_row((uint8_t)menu_cursor_index, true);
+        }
+        else
+        {
+            menu_draw_row((uint8_t)menu_cursor_index, true);
+        }
+
+        last_drawn_cursor = menu_cursor_index;
+        last_drawn_page = current_page;
+    }
 }

@@ -77,8 +77,10 @@ void menu_set_time_on_select(uint8_t index)
 
 void menu_set_time_update_from_pot(void)
 {
-    menu_editor_update_from_pot(&time_editor, g_pot_value, menu_get_cursor());
-    g_force_redraw = true;
+    if (menu_editor_update_from_pot(&time_editor, g_pot_value, menu_get_cursor()))
+    {
+        g_force_redraw = true;
+    }
 }
 
 void menu_set_time_custom_draw(void)
