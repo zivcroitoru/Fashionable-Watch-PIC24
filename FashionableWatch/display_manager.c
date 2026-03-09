@@ -15,17 +15,36 @@ static MenuPage last_title_page = (MenuPage)255;
 
 void draw_alarm_star(uint16_t color)
 {
-    oledC_DrawPoint(6,2,color);
-    oledC_DrawPoint(5,3,color);
-    oledC_DrawPoint(7,3,color);
-    oledC_DrawPoint(4,4,color);
-    oledC_DrawPoint(8,4,color);
-    oledC_DrawPoint(6,5,color);
-    oledC_DrawPoint(4,6,color);
-    oledC_DrawPoint(8,6,color);
-    oledC_DrawPoint(5,7,color);
-    oledC_DrawPoint(7,7,color);
-    oledC_DrawPoint(6,8,color);
+    int x = 36;
+    int y = 5;
+
+    oledC_DrawPoint(x+2, y+0, color);
+    oledC_DrawPoint(x+3, y+0, color);
+    oledC_DrawPoint(x+4, y+0, color);
+
+    oledC_DrawPoint(x+1, y+1, color);
+    oledC_DrawPoint(x+5, y+1, color);
+
+    oledC_DrawPoint(x+0, y+2, color);
+    oledC_DrawPoint(x+6, y+2, color);
+
+    oledC_DrawPoint(x+0, y+3, color);
+    oledC_DrawPoint(x+6, y+3, color);
+
+    oledC_DrawPoint(x+0, y+4, color);
+    oledC_DrawPoint(x+6, y+4, color);
+
+    oledC_DrawPoint(x+1, y+5, color);
+    oledC_DrawPoint(x+5, y+5, color);
+
+    oledC_DrawPoint(x+2, y+6, color);
+    oledC_DrawPoint(x+3, y+6, color);
+    oledC_DrawPoint(x+4, y+6, color);
+
+    /* hands */
+    oledC_DrawPoint(x+3, y+3, color);  // center
+    oledC_DrawPoint(x+3, y+2, color);  // hour hand
+    oledC_DrawPoint(x+4, y+4, color);  // minute hand
 }
 
 static void draw_menu_title(void)
@@ -37,9 +56,47 @@ static void draw_menu_title(void)
     if (page == last_title_page)
         return;
 
-    // clear only the title area, not the whole top bar
     oledC_DrawRectangle(0, 0, 40, 20, bg);
-    oledC_DrawString(2, 2, 1, 1, (uint8_t*)menu_get_title(), text);
+
+    switch (page)
+    {
+        case MENU_PAGE_MAIN:
+            oledC_DrawString(2, 2, 1, 1, (uint8_t*)"MAIN", text);
+            oledC_DrawString(2, 11, 1, 1, (uint8_t*)"MENU", text);
+            break;
+
+        case MENU_PAGE_SET_TIME:
+            oledC_DrawString(2, 2, 1, 1, (uint8_t*)"SET", text);
+            oledC_DrawString(2, 11, 1, 1, (uint8_t*)"TIME", text);
+            break;
+
+        case MENU_PAGE_SET_DATE:
+            oledC_DrawString(2, 2, 1, 1, (uint8_t*)"SET", text);
+            oledC_DrawString(2, 11, 1, 1, (uint8_t*)"DATE", text);
+            break;
+
+        case MENU_PAGE_ALARM:
+            oledC_DrawString(2, 2, 1, 1, (uint8_t*)"SET", text);
+            oledC_DrawString(2, 11, 1, 1, (uint8_t*)"ALARM", text);
+            break;
+
+        case MENU_PAGE_DISPLAY:
+            oledC_DrawString(2, 6, 1, 1, (uint8_t*)"DISPLAY", text);
+            break;
+
+        case MENU_PAGE_FORMAT:
+            oledC_DrawString(2, 6, 1, 1, (uint8_t*)"FORMAT", text);
+            break;
+
+        case MENU_PAGE_ANALOG_THEME:
+            oledC_DrawString(2, 2, 1, 1, (uint8_t*)"ANALOG", text);
+            oledC_DrawString(2, 11, 1, 1, (uint8_t*)"THEME", text);
+            break;
+
+        default:
+            oledC_DrawString(2, 6, 1, 1, (uint8_t*)"MENU", text);
+            break;
+    }
 
     last_title_page = page;
 }
@@ -70,6 +127,10 @@ if (myState == STATE_MENU)
         g_force_redraw = true;
     }
 
+    // draw title first, because it clears the top bar
+    draw_menu_title();
+
+    // draw alarm icon after title
     if (entering_menu || (alarmEnabled != last_alarm_enabled))
     {
         oledC_DrawRectangle(0, 0, 14, 14, bg);
@@ -79,9 +140,6 @@ if (myState == STATE_MENU)
             draw_alarm_star(text);
         }
     }
-
-    // draw title first, because it clears the top bar
-    draw_menu_title();
 
     if (hm_changed)
     {
