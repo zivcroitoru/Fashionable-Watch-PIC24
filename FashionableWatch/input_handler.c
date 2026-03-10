@@ -2,6 +2,7 @@
 #include "h/menu.h"
 #include <xc.h>
 #include "./../Accel_i2c.h"
+#include "h/alarm.h"
 
 #define LONG_PRESS_MS 2000
 
@@ -28,6 +29,11 @@ void check_inputs(void)
         s1_status.is_down = true;
         s1_status.start_time = ms_ticks;
         LATAbits.LATA0 = 1;
+
+        if (alarm_is_ringing()) {
+            alarm_stop();
+            return;
+        }
     }
     else if (!s1_active && s1_status.is_down)
     {
@@ -61,6 +67,11 @@ void check_inputs(void)
         s2_status.is_down = true;
         s2_status.start_time = ms_ticks;
         LATAbits.LATA1 = 1;
+
+        if (alarm_is_ringing()) {
+            alarm_stop();
+            return;
+        }
     }
     else if (!s2_active && s2_status.is_down)
     {
@@ -73,6 +84,7 @@ void check_inputs(void)
         }
     }
 }
+
 void check_gestures(void)
 {
     static uint8_t face_down_latched = 0;
@@ -83,6 +95,10 @@ void check_gestures(void)
         if (!face_down_latched)
         {
             face_down_latched = 1;
+
+            if (alarm_is_ringing()) {
+                alarm_stop();
+            }
 
             if (myState == STATE_MENU)
             {

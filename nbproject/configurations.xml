@@ -11,6 +11,7 @@
           <itemPath>FashionableWatch/h/menu_types.h</itemPath>
           <itemPath>FashionableWatch/h/menu_pages.h</itemPath>
           <itemPath>FashionableWatch/h/menu_editor.h</itemPath>
+          <itemPath>FashionableWatch/h/alarm.h</itemPath>
         </logicalFolder>
       </logicalFolder>
       <logicalFolder name="i2cDriver" displayName="i2cDriver" projectFiles="true">
@@ -56,6 +57,7 @@
         <itemPath>FashionableWatch/menu_format.c</itemPath>
         <itemPath>FashionableWatch/menu_analog_theme.c</itemPath>
         <itemPath>FashionableWatch/menu_editor.c</itemPath>
+        <itemPath>FashionableWatch/alarm.c</itemPath>
       </logicalFolder>
       <logicalFolder name="i2cDriver" displayName="i2cDriver" projectFiles="true">
         <itemPath>i2cDriver/i2c1_driver.c</itemPath>

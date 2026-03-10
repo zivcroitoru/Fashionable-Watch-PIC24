@@ -1,5 +1,6 @@
 #include "h/watch.h"
 #include "h/menu.h"
+#include "h/alarm.h"
 #include <stdio.h>
 #include <stdbool.h>
 
@@ -12,6 +13,7 @@ static WatchTime last_drawn = {255,255,255,255,255};
 static AppState last_state = (AppState)255;
 static bool last_alarm_enabled = false;
 static MenuPage last_title_page = (MenuPage)255;
+
 
 void draw_alarm_star(uint16_t color)
 {
@@ -118,8 +120,7 @@ static void draw_menu_top_bar(const WatchTime* t, bool force)
             draw_alarm_star(text);
 
         last_alarm_enabled = alarmEnabled;
-    }
-
+    } 
     // HH:MM
     if (hm_changed)
     {
@@ -130,16 +131,21 @@ static void draw_menu_top_bar(const WatchTime* t, bool force)
     }
 
     // SS
-    if (sec_changed)
+ if (sec_changed)
     {
-        char buf[3];
-        oledC_DrawRectangle(80, 8, 95, 18, bg);
-        sprintf(buf, "%02d", t->sec);
-        oledC_DrawString(80, 8, 1, 1, (uint8_t*)buf, text);
+        char buf[4]; // Size increased for the colon and null-terminator
+        oledC_DrawRectangle(76, 8, 94, 18, bg); // Shifted X left to 76 to reduce space
+        sprintf(buf, ":%02d", t->sec); // Added colon
+        oledC_DrawString(76, 8, 1, 1, (uint8_t*)buf, text); // Shifted X left to 76
     }
 }
 void update_display(void)
 {
+    if (alarm_is_ringing()) {
+    alarm_draw_if_active();
+    last_state = myState;
+    return;
+}
     uint16_t bg = 0x0000;
     uint16_t text = 0xFFFF;
     WatchTime t = now;
@@ -153,7 +159,9 @@ if (myState == STATE_MENU)
 
     if (entering_menu)
     {
-        oledC_DrawRectangle(0, 0, 95, 95, bg);
+        oledC_setBackground(bg);
+        oledC_clearScreen();
+
         menu_reset_draw_cache();
         last_title_page = (MenuPage)255;
         g_force_redraw = true;
@@ -175,7 +183,8 @@ if (myState == STATE_MENU)
     // ---------------- LEFT MENU -> CLOCK ----------------
     if (state_changed)
     {
-        oledC_DrawRectangle(0, 0, 95, 95, bg);
+        oledC_setBackground(bg);
+        oledC_clearScreen();
         last_drawn.hour  = 255;
         last_drawn.min   = 255;
         last_drawn.sec   = 255;

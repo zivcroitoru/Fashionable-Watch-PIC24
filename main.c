@@ -1,5 +1,6 @@
 #include "FashionableWatch/h/watch.h"
 #include "System/system.h"
+#include "FashionableWatch/h/alarm.h"
 
 int main(void)
 {
@@ -11,18 +12,20 @@ int main(void)
         check_inputs();
         check_gestures();
 
-        if (g_force_redraw)
-        {
-            update_display();
-            g_force_redraw = false;
-        }
-
         if (g_tick_1s)
         {
             g_tick_1s = false;
 
-            update_display();
+            alarm_update_1s();
             check_alarm_timeout();
+
+            update_display();   // refresh time
+        }
+
+        if (g_force_redraw)
+        {
+            update_display();   // redraw for UI/menu changes
+            g_force_redraw = false;
         }
     }
 
