@@ -47,58 +47,96 @@ void draw_alarm_star(uint16_t color)
     oledC_DrawPoint(x+4, y+4, color);  // minute hand
 }
 
-static void draw_menu_title(void)
+static void draw_menu_top_bar(const WatchTime* t, bool force)
 {
     uint16_t bg = 0x0000;
     uint16_t text = 0xFFFF;
     MenuPage page = menu_get_current_page();
 
-    if (page == last_title_page)
-        return;
+    bool page_changed = (page != last_title_page);
+    bool alarm_changed = (alarmEnabled != last_alarm_enabled);
+    bool hm_changed = force ||
+                      (t->hour != last_drawn.hour) ||
+                      (t->min  != last_drawn.min);
+    bool sec_changed = force ||
+                       (t->sec != last_drawn.sec);
 
-    oledC_DrawRectangle(0, 0, 40, 20, bg);
-
-    switch (page)
+    // left title area
+    if (force || page_changed)
     {
-        case MENU_PAGE_MAIN:
-            oledC_DrawString(2, 2, 1, 1, (uint8_t*)"MAIN", text);
-            oledC_DrawString(2, 11, 1, 1, (uint8_t*)"MENU", text);
-            break;
+        oledC_DrawRectangle(0, 0, 35, 20, bg);
 
-        case MENU_PAGE_SET_TIME:
-            oledC_DrawString(2, 2, 1, 1, (uint8_t*)"SET", text);
-            oledC_DrawString(2, 11, 1, 1, (uint8_t*)"TIME", text);
-            break;
+        switch (page)
+        {
+            case MENU_PAGE_MAIN:
+                oledC_DrawString(2, 2, 1, 1, (uint8_t*)"MAIN", text);
+                oledC_DrawString(2, 11, 1, 1, (uint8_t*)"MENU", text);
+                break;
 
-        case MENU_PAGE_SET_DATE:
-            oledC_DrawString(2, 2, 1, 1, (uint8_t*)"SET", text);
-            oledC_DrawString(2, 11, 1, 1, (uint8_t*)"DATE", text);
-            break;
+            case MENU_PAGE_SET_TIME:
+                oledC_DrawString(2, 2, 1, 1, (uint8_t*)"SET", text);
+                oledC_DrawString(2, 11, 1, 1, (uint8_t*)"TIME", text);
+                break;
 
-        case MENU_PAGE_ALARM:
-            oledC_DrawString(2, 2, 1, 1, (uint8_t*)"SET", text);
-            oledC_DrawString(2, 11, 1, 1, (uint8_t*)"ALARM", text);
-            break;
+            case MENU_PAGE_SET_DATE:
+                oledC_DrawString(2, 2, 1, 1, (uint8_t*)"SET", text);
+                oledC_DrawString(2, 11, 1, 1, (uint8_t*)"DATE", text);
+                break;
 
-        case MENU_PAGE_DISPLAY:
-            oledC_DrawString(2, 6, 1, 1, (uint8_t*)"DISPLAY", text);
-            break;
+            case MENU_PAGE_ALARM:
+                oledC_DrawString(2, 2, 1, 1, (uint8_t*)"SET", text);
+                oledC_DrawString(2, 11, 1, 1, (uint8_t*)"ALARM", text);
+                break;
 
-        case MENU_PAGE_FORMAT:
-            oledC_DrawString(2, 6, 1, 1, (uint8_t*)"FORMAT", text);
-            break;
+            case MENU_PAGE_DISPLAY:
+                oledC_DrawString(2, 6, 1, 1, (uint8_t*)"DISPLAY", text);
+                break;
 
-        case MENU_PAGE_ANALOG_THEME:
-            oledC_DrawString(2, 2, 1, 1, (uint8_t*)"ANALOG", text);
-            oledC_DrawString(2, 11, 1, 1, (uint8_t*)"THEME", text);
-            break;
+            case MENU_PAGE_FORMAT:
+                oledC_DrawString(2, 6, 1, 1, (uint8_t*)"FORMAT", text);
+                break;
 
-        default:
-            oledC_DrawString(2, 6, 1, 1, (uint8_t*)"MENU", text);
-            break;
+            case MENU_PAGE_ANALOG_THEME:
+                oledC_DrawString(2, 2, 1, 1, (uint8_t*)"ANALOG", text);
+                oledC_DrawString(2, 11, 1, 1, (uint8_t*)"THEME", text);
+                break;
+
+            default:
+                oledC_DrawString(2, 6, 1, 1, (uint8_t*)"MENU", text);
+                break;
+        }
+
+        last_title_page = page;
     }
 
-    last_title_page = page;
+    // alarm icon area
+    if (force || alarm_changed)
+    {
+        oledC_DrawRectangle(36, 5, 43, 12, bg);
+
+        if (alarmEnabled)
+            draw_alarm_star(text);
+
+        last_alarm_enabled = alarmEnabled;
+    }
+
+    // HH:MM
+    if (hm_changed)
+    {
+        char buf[6];
+        oledC_DrawRectangle(46, 8, 77, 18, bg);
+        sprintf(buf, "%02d:%02d", get_display_hour(t->hour), t->min);
+        oledC_DrawString(46, 8, 1, 1, (uint8_t*)buf, text);
+    }
+
+    // SS
+    if (sec_changed)
+    {
+        char buf[3];
+        oledC_DrawRectangle(80, 8, 95, 18, bg);
+        sprintf(buf, "%02d", t->sec);
+        oledC_DrawString(80, 8, 1, 1, (uint8_t*)buf, text);
+    }
 }
 void update_display(void)
 {
@@ -112,12 +150,6 @@ void update_display(void)
 if (myState == STATE_MENU)
 {
     bool entering_menu = state_changed;
-    bool hm_changed = entering_menu ||
-                      (t.hour != last_drawn.hour) ||
-                      (t.min  != last_drawn.min);
-
-    bool sec_changed = entering_menu ||
-                       (t.sec != last_drawn.sec);
 
     if (entering_menu)
     {
@@ -127,35 +159,7 @@ if (myState == STATE_MENU)
         g_force_redraw = true;
     }
 
-    // draw title first, because it clears the top bar
-    draw_menu_title();
-
-    // draw alarm icon after title
-    if (entering_menu || (alarmEnabled != last_alarm_enabled))
-    {
-        oledC_DrawRectangle(0, 0, 14, 14, bg);
-
-        if (alarmEnabled)
-        {
-            draw_alarm_star(text);
-        }
-    }
-
-    if (hm_changed)
-    {
-        char buf[6];
-        oledC_DrawRectangle(38, 8, 81, 18, bg);
-        sprintf(buf, "%02d:%02d", get_display_hour(t.hour), t.min);
-        oledC_DrawString(48, 8, 1, 1, (uint8_t*)buf, text);
-    }
-
-    if (sec_changed)
-    {
-        char buf[5];
-        oledC_DrawRectangle(82, 8, 95, 18, bg);
-        sprintf(buf, ":%02d", t.sec);
-        oledC_DrawString(78, 8, 1, 1, (uint8_t*)buf, text);
-    }
+    draw_menu_top_bar(&t, entering_menu);
 
     if (g_force_redraw)
     {
@@ -165,7 +169,6 @@ if (myState == STATE_MENU)
 
     last_drawn = t;
     last_state = myState;
-    last_alarm_enabled = alarmEnabled;
     return;
 }
 
