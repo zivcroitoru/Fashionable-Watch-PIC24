@@ -224,13 +224,14 @@ if (myState == STATE_MENU)
         oledC_DrawString(66, 84, 1, 1, (uint8_t*)date_buf, text);
     }
 
-    // ANALOG
+// ANALOG
     if (myFace == FACE_ANALOG)
     {
         if (state_changed || t.sec != last_drawn.sec)
         {
-            oledC_DrawRectangle(20, 30, 76, 50, bg);
-            oledC_DrawString(10, 40, 1, 1, (uint8_t*)"ANALOG", text);
+            // Erase the placeholder rectangle and string!
+            // Call your new function instead:
+            update_analog_face(); 
         }
 
         last_drawn = t;

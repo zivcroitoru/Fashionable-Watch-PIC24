@@ -11,23 +11,16 @@ uint8_t menu_display_get_count(void)
 
 const char* menu_display_get_item(uint8_t index)
 {
-    static char row1[20];
-    static char row2[20];
+    static char row[20]; // Just one buffer is enough
 
     switch (index)
     {
-        case 0:
-            return "< Back";
-
+        case 0: return "< Back";
         case 1:
-            sprintf(row1, "Digital [%c]", (myFace == FACE_DIGI) ? 'X' : ' ');
-            return row1;
-
-        case 2:
-            return "Analog >";
-
-        default:
-            return "";
+            sprintf(row, "Digital [%c]", (myFace == FACE_DIGI) ? 'X' : ' ');
+            return row;
+        case 2: return "Analog >";
+        default: return "";
     }
 }
 

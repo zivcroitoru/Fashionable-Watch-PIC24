@@ -124,9 +124,19 @@ void menu_next_item(void)
     g_force_redraw = true;
 }
 
+//void menu_select_current(void)
+//{
+//    menu_select_for_page(current_page, (uint8_t)menu_cursor_index);
+//    g_force_redraw = true;
+//}
 void menu_select_current(void)
 {
+    // 1. Run the selection logic (changes myFace or analogTheme)
     menu_select_for_page(current_page, (uint8_t)menu_cursor_index);
+    
+    // 2. ADD THIS LINE: Clear the cache so it redraws ALL rows
+    menu_reset_draw_cache(); 
+    
     g_force_redraw = true;
 }
 

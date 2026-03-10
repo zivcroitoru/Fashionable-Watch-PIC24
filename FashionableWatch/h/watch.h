@@ -3,7 +3,9 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-
+#include "../../oledDriver/oledC.h"
+#include "../../oledDriver/oledC_colors.h"
+#include "../../oledDriver/oledC_shapes.h"
 typedef struct
 {
     uint8_t sec;
@@ -44,13 +46,15 @@ extern volatile bool g_force_redraw;
 extern volatile bool g_tick_1s;
 extern volatile uint32_t ms_ticks;
 
+extern uint8_t analogTheme;
+
 void init_all(void);
 void pot_update(void);
 void check_inputs(void);
 void check_gestures(void);
 void update_display(void);
 void check_alarm_timeout(void);
-
+void update_analog_face(void);
 uint8_t accel_is_face_down(void);
 void accel_debug_display(void);
 
