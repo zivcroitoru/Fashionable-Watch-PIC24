@@ -11,39 +11,131 @@
 #include <stdio.h>
 #include <xc.h>
 
+// Pot -> menu handlers
+void menu_set_time_update_from_pot(void);
+void menu_set_date_update_from_pot(void);
+void menu_alarm_update_from_pot(void);
+
+// I2C driver funcs
+void i2c1_driver_open(void);
+void i2c1_driver_close(void);
+
 uint8_t analogTheme = 0;
 volatile uint16_t g_pot_value = 0;
 
-#define ADXL_ADDR 0x3A   // ADXL345 8-bit write address (ALT high)
+#define ADXL_ADDR 0x3A   // keep the value that got you past BAD DEVID
 
 // ============================================================================
-// ERROR DISPLAY
+// LOCAL HELPERS
 // ============================================================================
+
+static void i2c_force_reset(void)
+{
+    i2c1_driver_close();
+    I2C1STAT = 0x0000;
+    DELAY_milliseconds(100);
+    i2c1_driver_open();
+    DELAY_milliseconds(100);
+}
 
 static void show_init_error(const char* msg)
 {
-    oledC_DrawRectangle(0,0,95,95,0x0000);
-    oledC_DrawString(2,5,1,1,(uint8_t*)msg,0xFFFF);
+    oledC_DrawRectangle(0, 0, 95, 95, 0x0000);
+    oledC_DrawString(2, 5, 1, 1, (uint8_t*)msg, 0xFFFF);
     LATAbits.LATA1 = 0;
+}
+
+static uint8_t accel_init(void)
+{
+    unsigned char devid = 0;
+    I2Cerror rc = OK;
+    uint8_t tries;
+
+    i2c_force_reset();
+    DELAY_milliseconds(200);
+
+    // Read DEVID with retries
+    for (tries = 0; tries < 3; tries++)
+    {
+        rc = i2cReadSlaveRegister(ADXL_ADDR, 0x00, &devid);
+        if (rc == OK && devid == 0xE5)
+            break;
+
+        DELAY_milliseconds(50);
+    }
+
+    if (rc != OK)
+        return 10;
+
+    if (devid != 0xE5)
+        return 11;
+
+    // Put sensor in standby first
+    for (tries = 0; tries < 3; tries++)
+    {
+        rc = i2cWriteSlave(ADXL_ADDR, 0x2D, 0x00);
+        if (rc == OK)
+            break;
+
+        DELAY_milliseconds(20);
+    }
+    if (rc != OK)
+        return 14;
+
+    DELAY_milliseconds(20);
+
+    // DATA_FORMAT
+    for (tries = 0; tries < 3; tries++)
+    {
+        rc = i2cWriteSlave(ADXL_ADDR, 0x31, 0x00);
+        if (rc == OK)
+            break;
+
+        DELAY_milliseconds(20);
+    }
+    if (rc != OK)
+        return 12;
+
+    DELAY_milliseconds(20);
+
+    // Measurement mode
+    for (tries = 0; tries < 3; tries++)
+    {
+        rc = i2cWriteSlave(ADXL_ADDR, 0x2D, 0x08);
+        if (rc == OK)
+            break;
+
+        DELAY_milliseconds(20);
+    }
+    if (rc != OK)
+        return 13;
+
+    DELAY_milliseconds(100);
+
+    return 1;
 }
 
 // ============================================================================
 // POTENTIOMETER UPDATE
 // ============================================================================
+
 void pot_update(void)
 {
     static uint16_t prevVal = 0;
     uint16_t currVal;
 
-    AD1CON1 |= (1 << 1);
+    AD1CON1 |= (1 << 1);      // SAMP = 1
     DELAY_milliseconds(5);
-    AD1CON1 &= ~(1 << 1);
+    AD1CON1 &= ~(1 << 1);     // SAMP = 0 -> convert
 
-    while ((AD1CON1 & 1) == 0);
+    while ((AD1CON1 & 1) == 0)
+    {
+        ;
+    }
 
     currVal = ADC1BUF0;
 
-    if (currVal > prevVal + 5 || currVal < prevVal - 5)
+    if ((currVal > (prevVal + 5)) || (currVal + 5 < prevVal))
     {
         g_pot_value = currVal;
         prevVal = currVal;
@@ -77,24 +169,42 @@ void pot_update(void)
 
 void init_all(void)
 {
-    unsigned char devid = 0;
+    uint8_t st;
 
     __builtin_disable_interrupts();
 
     SYSTEM_Initialize();
+    DELAY_milliseconds(300);
+
+    // Try accel first, before other stuff
+    st = accel_init();
+    if (st != 1)
+    {
+        DELAY_milliseconds(150);
+        st = accel_init();
+    }
+
+    // Bring OLED up so we can show init status
     oledC_setup();
 
-    // ------------------------------------------------
-    // Buttons
-    // ------------------------------------------------
+    if (st != 1)
+    {
+        if (st == 10)      show_init_error("READ FAIL");
+        else if (st == 11) show_init_error("BAD DEVID");
+        else if (st == 12) show_init_error("WR31 FAIL");
+        else if (st == 13) show_init_error("MEAS FAIL");
+        else if (st == 14) show_init_error("STBY FAIL");
+        else               show_init_error("ACCEL FAIL");
 
+        __builtin_enable_interrupts();
+        return;
+    }
+
+    // Buttons
     TRISAbits.TRISA11 = 1;
     TRISAbits.TRISA12 = 1;
 
-    // ------------------------------------------------
     // LEDs
-    // ------------------------------------------------
-
     TRISAbits.TRISA0 = 0;
     ANSELAbits.ANSA0 = 0;
 
@@ -104,116 +214,33 @@ void init_all(void)
     LATAbits.LATA0 = 0;
     LATAbits.LATA1 = 0;
 
-    // ------------------------------------------------
-    // TIMER 1
-    // ------------------------------------------------
-
+    // Timer1
     T1CON = 0x8030;
     PR1 = 15625;
-
     _T1IF = 0;
     _T1IE = 1;
 
-    // ------------------------------------------------
     // ADC (Potentiometer RB12)
-    // ------------------------------------------------
-
     TRISBbits.TRISB12 = 1;
     ANSELBbits.ANSB12 = 1;
 
     AD1CON1 = 0;
-    AD1CON1 |= (1 << 15);
-    AD1CON1 &= ~(1 << 2);
+    AD1CON1 |= (1 << 15);     // ADON = 1
+    AD1CON1 &= ~(1 << 2);     // manual sampling
 
     AD1CON2 = 0;
 
     AD1CON3 = 0;
-    AD1CON3 |= 0xFF;
+    AD1CON3 |= 0x00FF;
     AD1CON3 |= (0x10 << 8);
 
     AD1CHS = 8;
 
-    // ------------------------------------------------
-    // I2C1 PINS  (RB8=SCL RB9=SDA)
-    // ------------------------------------------------
-
+    // I2C pins
     TRISBbits.TRISB8 = 1;
     TRISBbits.TRISB9 = 1;
 
-//    ANSELBbits.ANSB8 = 0;
-//    ANSELBbits.ANSB9 = 0;
-
-    // ------------------------------------------------
-    // I2C OPEN
-    // ------------------------------------------------
-
-    DELAY_milliseconds(200);
-
-    i2c1_driver_close();
-    I2C1STAT = 0x0000;
-    DELAY_milliseconds(100);
-    i2c1_driver_open();
-    DELAY_milliseconds(100);
-
-    // ------------------------------------------------
-    // ADXL345 DEVICE ID CHECK
-    // ------------------------------------------------
-
-I2Cerror rc;
-
-rc = i2cReadSlaveRegister(ADXL_ADDR, 0x00, &devid);
-if (rc != OK || devid != 0xE5)
-{
-    DELAY_milliseconds(100);
-    rc = i2cReadSlaveRegister(ADXL_ADDR, 0x00, &devid);
-    if (rc != OK || devid != 0xE5)
-    {
-        show_init_error("DEVID FAIL");
-        __builtin_enable_interrupts();
-        return;
-    }
-}
-
-    if (devid != 0xE5)
-    {
-        show_init_error("BAD ID");
-        __builtin_enable_interrupts();
-        return;
-    }
-
-
-    // ------------------------------------------------
-    // ADXL CONFIG
-    // ------------------------------------------------
-
-    if (i2cWriteSlave(ADXL_ADDR,0x2D,0x00) != OK)
-    {
-        show_init_error("WR 2D FAIL");
-        __builtin_enable_interrupts();
-        return;
-    }
-
-    DELAY_milliseconds(10);
-
-if (i2cWriteSlave(ADXL_ADDR, 0x31, 0x00) != OK)
-{
-    show_init_error("WR 31 FAIL");
-    __builtin_enable_interrupts();
-    return;
-}
-DELAY_milliseconds(10);
-
-if (i2cWriteSlave(ADXL_ADDR, 0x2D, 0x08) != OK)
-{
-    show_init_error("WR MEAS FAIL");
-    __builtin_enable_interrupts();
-    return;
-}
-DELAY_milliseconds(100);
-
-    DELAY_milliseconds(50);
-
-    oledC_DrawRectangle(0,0,95,95,0x0000);
+    oledC_DrawRectangle(0, 0, 95, 95, 0x0000);
 
     __builtin_enable_interrupts();
 }
@@ -221,6 +248,7 @@ DELAY_milliseconds(100);
 // ============================================================================
 // ACCEL READ
 // ============================================================================
+
 static uint8_t accel_read_xyz(int16_t* x, int16_t* y, int16_t* z)
 {
     unsigned char x0, x1, y0, y1, z0, z1;
@@ -255,8 +283,11 @@ static uint8_t accel_read_xyz(int16_t* x, int16_t* y, int16_t* z)
 
 fail:
     __builtin_enable_interrupts();
+    i2c_force_reset();
+    accel_init();
     return 0;
 }
+
 // ============================================================================
 // FACE DOWN CHECK
 // ============================================================================
@@ -270,12 +301,17 @@ uint8_t accel_is_face_down(void)
 
     return (z < -100) ? 1 : 0;
 }
+
+// ============================================================================
+// DEBUG DISPLAY
+// ============================================================================
+
 void accel_debug_display(void)
 {
     int16_t x, y, z;
     char buf[24];
 
-    oledC_DrawRectangle(0,0,95,95,0x0000);
+    oledC_DrawRectangle(0, 0, 95, 95, 0x0000);
 
     if (!accel_read_xyz(&x, &y, &z))
     {
@@ -308,5 +344,3 @@ void accel_debug_display(void)
 
     DELAY_milliseconds(200);
 }
-
-
