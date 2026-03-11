@@ -2,7 +2,7 @@
 
 #define CX 47
 #define CY 47
-#define CLOCK_R 20
+#define CLOCK_R 18
 
 const uint8_t edge_x[60] = {
     47, 52, 56, 61, 65, 70, 74, 78, 81, 85, 87, 90, 92, 93, 94, 94, 94, 93, 92, 90,
@@ -25,49 +25,31 @@ static void get_scaled_point(uint8_t index, uint8_t length_percent, uint8_t *x, 
     *y = (uint8_t)(CY + (dy * CLOCK_R * length_percent) / (47 * 100));
 }
 
-static void draw_hand_thin(uint8_t index, uint8_t length_percent, uint16_t color)
+static void draw_clock_hand(uint8_t index, uint8_t length_percent, uint8_t width, uint16_t color)
 {
     uint8_t ex, ey;
     get_scaled_point(index, length_percent, &ex, &ey);
-    oledC_DrawLine(CX, CY, ex, ey, 1, color);
-}
-
-static void draw_hand_medium(uint8_t index, uint8_t length_percent, uint16_t color)
-{
-    uint8_t ex, ey;
-    get_scaled_point(index, length_percent, &ex, &ey);
-
-    oledC_DrawLine(CX, CY, ex, ey, 1, color);
-    oledC_DrawLine(CX + 1, CY, ex + 1, ey, 1, color);
-}
-
-static void draw_hand_thick(uint8_t index, uint8_t length_percent, uint16_t color)
-{
-    uint8_t ex, ey;
-    get_scaled_point(index, length_percent, &ex, &ey);
-
-    oledC_DrawLine(CX, CY, ex, ey, 1, color);
-    oledC_DrawLine(CX + 1, CY, ex + 1, ey, 1, color);
-    oledC_DrawLine(CX, CY + 1, ex, ey + 1, 1, color);
+    oledC_DrawLine(CX, CY, ex, ey, width, color);
 }
 
 static void draw_clock_marks(void)
 {
     int i;
-
     for (i = 0; i < 60; i++)
     {
         uint8_t sx, sy, ex, ey;
 
         if (i % 5 == 0)
         {
-            get_scaled_point(i, 78, &sx, &sy);
+            /* ???? ??? - 10% ??????? */
+            get_scaled_point(i, 90, &sx, &sy);
             get_scaled_point(i, 100, &ex, &ey);
             oledC_DrawLine(sx, sy, ex, ey, 1, 0xFFFF);
         }
         else
         {
-            get_scaled_point(i, 88, &sx, &sy);
+            /* ???? ??? - ???? ???? */
+            get_scaled_point(i, 95, &sx, &sy);
             get_scaled_point(i, 100, &ex, &ey);
             oledC_DrawLine(sx, sy, ex, ey, 1, 0xFFFF);
         }
@@ -79,7 +61,7 @@ static void draw_clock_outline(void)
     oledC_DrawCircle(CX, CY, CLOCK_R, 0xFFFF);
 }
 
-static void draw_center_dot(void)
+static void draw_clock_center(void)
 {
     oledC_DrawPoint(CX, CY, 0xFFFF);
     oledC_DrawPoint(CX + 1, CY, 0xFFFF);
@@ -87,14 +69,27 @@ static void draw_center_dot(void)
     oledC_DrawPoint(CX + 1, CY + 1, 0xFFFF);
 }
 
+static void draw_face_static(void)
+{
+    draw_clock_outline();
+    draw_clock_marks();
+    draw_clock_center();
+}
+
 void update_analog_face(void)
 {
-    uint8_t h_index;
+    static uint8_t first_draw = 1;
+    static uint8_t old_s = 0;
+    static uint8_t old_m = 0;
+    static uint8_t old_h = 0;
+
+    uint8_t new_s = now.sec;
+    uint8_t new_m = now.min;
+    uint8_t new_h = (now.hour % 12) * 5 + (now.min / 12);
+
     uint16_t c_h = 0xFFFF;
     uint16_t c_m = 0xFFFF;
     uint16_t c_s = 0xFFFF;
-
-    h_index = (now.hour % 12) * 5 + (now.min / 12);
 
     if (analogTheme == 1)
     {
@@ -103,15 +98,43 @@ void update_analog_face(void)
         c_s = OLEDC_COLOR_GREEN;
     }
 
-    /* clear full screen / analog area */
-    oledC_DrawRectangle(0, 0, 95, 95, 0x0000);
+    if (first_draw)
+    {
+        oledC_DrawRectangle(0, 0, 95, 95, 0x0000);
+        draw_face_static();
 
+        draw_clock_hand(new_h, 50, 2, c_h);
+        draw_clock_hand(new_m, 75, 2, c_m);
+        draw_clock_hand(new_s, 90, 1, c_s);
+
+        old_h = new_h;
+        old_m = new_m;
+        old_s = new_s;
+        first_draw = 0;
+        return;
+    }
+
+    if (new_s == old_s && new_m == old_m && new_h == old_h)
+        return;
+
+    /* ????? ??????? ?????? */
+    draw_clock_hand(old_h, 50, 2, 0x0000);
+    draw_clock_hand(old_m, 75, 2, 0x0000);
+    draw_clock_hand(old_s, 90, 1, 0x0000);
+
+    /* ????? ?? ????? */
     draw_clock_outline();
     draw_clock_marks();
+    draw_clock_center();
 
-    draw_hand_thick(h_index, 45, c_h);
-    draw_hand_medium(now.min, 65, c_m);
-    draw_hand_thin(now.sec, 85, c_s);
+    /* ???? ??????? ?????? */
+    draw_clock_hand(new_h, 50, 2, c_h);
+    draw_clock_hand(new_m, 75, 2, c_m);
+    draw_clock_hand(new_s, 90, 1, c_s);
 
-    draw_center_dot();
+    draw_clock_center();
+
+    old_h = new_h;
+    old_m = new_m;
+    old_s = new_s;
 }
