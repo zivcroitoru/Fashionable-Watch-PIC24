@@ -1,0 +1,15 @@
+#ifndef MENU_TYPES_H
+#define MENU_TYPES_H
+
+typedef enum
+{
+    MENU_PAGE_MAIN = 0,
+    MENU_PAGE_DISPLAY,
+    MENU_PAGE_ANALOG_THEME,
+    MENU_PAGE_FORMAT,
+    MENU_PAGE_SET_TIME,
+    MENU_PAGE_SET_DATE,
+    MENU_PAGE_ALARM
+} MenuPage;
+
+#endif

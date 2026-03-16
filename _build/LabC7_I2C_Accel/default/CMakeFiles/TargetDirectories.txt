@@ -1,0 +1,5 @@
+F:/Projects_Embedded/Fashionable-Watch/_build/LabC7_I2C_Accel/default/CMakeFiles/LabC7_I2C_Accel_default_default_XC16_compile.dir
+F:/Projects_Embedded/Fashionable-Watch/_build/LabC7_I2C_Accel/default/CMakeFiles/LabC7_I2C_Accel_default_image_xr51daR9.dir
+F:/Projects_Embedded/Fashionable-Watch/_build/LabC7_I2C_Accel/default/CMakeFiles/LabC7_I2C_Accel_default_Bin2Hex.dir
+F:/Projects_Embedded/Fashionable-Watch/_build/LabC7_I2C_Accel/default/CMakeFiles/edit_cache.dir
+F:/Projects_Embedded/Fashionable-Watch/_build/LabC7_I2C_Accel/default/CMakeFiles/rebuild_cache.dir
