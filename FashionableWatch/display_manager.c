@@ -4,18 +4,23 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-#define MENU_CLOCK_X 46
-#define MENU_CLOCK_Y 12
-
 extern bool alarmEnabled;
 
+/* 
+ * Cache of the last thing we actually drew.
+ * Using these lets us redraw only what changed instead of refreshing everything.
+ */
 static WatchTime last_drawn = {255,255,255,255,255};
-static AppState last_state = (AppState)255;
-static bool last_alarm_enabled = false;
-static MenuPage last_title_page = (MenuPage)255;
+static AppState  last_state = (AppState)255;
+static FaceType  last_face = (FaceType)255;
+static bool      last_alarm_enabled = false;
+static MenuPage  last_title_page = (MenuPage)255;
 
-
-void draw_alarm_star(uint16_t color)
+/*
+ * Small alarm/clock icon that appears near the top.
+ * It is tiny, so drawing pixel-by-pixel is simple and predictable.
+ */
+static void draw_alarm_icon(uint16_t color)
 {
     int x = 36;
     int y = 5;
@@ -43,27 +48,31 @@ void draw_alarm_star(uint16_t color)
     oledC_DrawPoint(x+3, y+6, color);
     oledC_DrawPoint(x+4, y+6, color);
 
-    /* hands */
-    oledC_DrawPoint(x+3, y+3, color);  // center
-    oledC_DrawPoint(x+3, y+2, color);  // hour hand
-    oledC_DrawPoint(x+4, y+4, color);  // minute hand
+    /* tiny hands in the middle */
+    oledC_DrawPoint(x+3, y+3, color);
+    oledC_DrawPoint(x+3, y+2, color);
+    oledC_DrawPoint(x+4, y+4, color);
 }
 
+/*
+ * Draws the top bar while inside the menu.
+ * Only the changed parts are refreshed to keep the screen stable.
+ */
 static void draw_menu_top_bar(const WatchTime* t, bool force)
 {
-    uint16_t bg = 0x0000;
+    uint16_t bg   = 0x0000;
     uint16_t text = 0xFFFF;
     MenuPage page = menu_get_current_page();
 
-    bool page_changed = (page != last_title_page);
+    bool page_changed  = (page != last_title_page);
     bool alarm_changed = (alarmEnabled != last_alarm_enabled);
-    bool hm_changed = force ||
-                      (t->hour != last_drawn.hour) ||
-                      (t->min  != last_drawn.min);
-    bool sec_changed = force ||
-                       (t->sec != last_drawn.sec);
+    bool hm_changed    = force ||
+                         (t->hour != last_drawn.hour) ||
+                         (t->min  != last_drawn.min);
+    bool sec_changed   = force ||
+                         (t->sec  != last_drawn.sec);
 
-    // left title area
+    /* Left title area */
     if (force || page_changed)
     {
         oledC_DrawRectangle(0, 0, 35, 20, bg);
@@ -111,17 +120,20 @@ static void draw_menu_top_bar(const WatchTime* t, bool force)
         last_title_page = page;
     }
 
-    // alarm icon area
+    /* Alarm icon area */
     if (force || alarm_changed)
     {
         oledC_DrawRectangle(36, 5, 43, 12, bg);
 
         if (alarmEnabled)
-            draw_alarm_star(text);
+        {
+            draw_alarm_icon(text);
+        }
 
         last_alarm_enabled = alarmEnabled;
-    } 
-    // HH:MM
+    }
+
+    /* Hours and minutes */
     if (hm_changed)
     {
         char buf[6];
@@ -130,61 +142,85 @@ static void draw_menu_top_bar(const WatchTime* t, bool force)
         oledC_DrawString(46, 8, 1, 1, (uint8_t*)buf, text);
     }
 
-    // SS
- if (sec_changed)
+    /* Seconds */
+    if (sec_changed)
     {
-        char buf[4]; // Size increased for the colon and null-terminator
-        oledC_DrawRectangle(76, 8, 94, 18, bg); // Shifted X left to 76 to reduce space
-        sprintf(buf, ":%02d", t->sec); // Added colon
-        oledC_DrawString(76, 8, 1, 1, (uint8_t*)buf, text); // Shifted X left to 76
+        char buf[4];
+        oledC_DrawRectangle(76, 8, 94, 18, bg);
+        sprintf(buf, ":%02d", t->sec);
+        oledC_DrawString(76, 8, 1, 1, (uint8_t*)buf, text);
     }
 }
+
 void update_display(void)
 {
-    if (alarm_is_ringing()) {
-    alarm_draw_if_active();
-    last_state = myState;
-    return;
-}
-    uint16_t bg = 0x0000;
+    uint16_t bg   = 0x0000;
     uint16_t text = 0xFFFF;
-    WatchTime t = now;
+    WatchTime t   = now;
 
     bool state_changed = (myState != last_state);
+    bool face_changed  = (myFace  != last_face);
 
-    // ---------------- MENU ----------------
-if (myState == STATE_MENU)
-{
-    bool entering_menu = state_changed;
+    /*
+     * If the alarm is currently active, let the alarm module own the screen.
+     * We still update cache values so returning to the normal screen is smoother.
+     */
+    if (alarm_is_ringing())
+    {
+        alarm_draw_if_active();
+        last_state = myState;
+        last_face = myFace;
+        last_alarm_enabled = alarmEnabled;
+        last_drawn = t;
+        return;
+    }
 
-    if (entering_menu)
+    /* ---------------- MENU ---------------- */
+    if (myState == STATE_MENU)
+    {
+        bool entering_menu = state_changed;
+
+        if (entering_menu)
+        {
+            oledC_setBackground(bg);
+            oledC_clearScreen();
+
+            /* Reset menu-related drawing cache */
+            menu_reset_draw_cache();
+            last_title_page = (MenuPage)255;
+
+            /* Force one full menu draw after entering */
+            g_force_redraw = true;
+        }
+
+        draw_menu_top_bar(&t, entering_menu);
+
+        if (g_force_redraw)
+        {
+            menu_draw();
+            g_force_redraw = false;
+        }
+
+        last_drawn = t;
+        last_state = myState;
+        last_face  = myFace;
+        return;
+    }
+
+    /* ---------------- CLOCK SCREEN ---------------- */
+    /*
+     * Clear the whole screen when:
+     * 1. state changed (menu <-> clock)
+     * 2. face changed (digital <-> analog)
+     *
+     * Without this, old pixels from the previous mode can stay behind.
+     */
+    if (state_changed || face_changed)
     {
         oledC_setBackground(bg);
         oledC_clearScreen();
 
-        menu_reset_draw_cache();
-        last_title_page = (MenuPage)255;
-        g_force_redraw = true;
-    }
-
-    draw_menu_top_bar(&t, entering_menu);
-
-    if (g_force_redraw)
-    {
-        menu_draw();
-        g_force_redraw = false;
-    }
-
-    last_drawn = t;
-    last_state = myState;
-    return;
-}
-
-    // ---------------- LEFT MENU -> CLOCK ----------------
-    if (state_changed)
-    {
-        oledC_setBackground(bg);
-        oledC_clearScreen();
+        /* Invalidate cache so everything needed gets redrawn */
         last_drawn.hour  = 255;
         last_drawn.min   = 255;
         last_drawn.sec   = 255;
@@ -193,19 +229,20 @@ if (myState == STATE_MENU)
         last_title_page  = (MenuPage)255;
     }
 
-    // Alarm icon
-    if (state_changed || (alarmEnabled != last_alarm_enabled))
+    /* Alarm icon */
+    if (state_changed || face_changed || (alarmEnabled != last_alarm_enabled))
     {
-        oledC_DrawRectangle(0, 0, 14, 14, bg);
+        /* Clear the same area where the icon is actually drawn */
+        oledC_DrawRectangle(36, 5, 43, 12, bg);
 
         if (alarmEnabled)
         {
-            draw_alarm_star(text);
+            draw_alarm_icon(text);
         }
     }
 
-    // AM / PM
-    if (state_changed || t.hour != last_drawn.hour)
+    /* AM / PM */
+    if (state_changed || face_changed || (t.hour != last_drawn.hour))
     {
         oledC_DrawRectangle(2, 84, 20, 94, bg);
         oledC_DrawString(2, 84, 1, 1,
@@ -213,10 +250,11 @@ if (myState == STATE_MENU)
                          text);
     }
 
-    // Date
+    /* Date */
     if (state_changed ||
-        t.day   != last_drawn.day ||
-        t.month != last_drawn.month)
+        face_changed  ||
+        (t.day   != last_drawn.day) ||
+        (t.month != last_drawn.month))
     {
         char date_buf[6];
         oledC_DrawRectangle(66, 84, 95, 94, bg);
@@ -224,25 +262,25 @@ if (myState == STATE_MENU)
         oledC_DrawString(66, 84, 1, 1, (uint8_t*)date_buf, text);
     }
 
-// ANALOG
+    /* ---------------- ANALOG ---------------- */
     if (myFace == FACE_ANALOG)
     {
-        if (state_changed || t.sec != last_drawn.sec)
+        if (state_changed || face_changed || (t.sec != last_drawn.sec))
         {
-            // Erase the placeholder rectangle and string!
-            // Call your new function instead:
-            update_analog_face(); 
+            update_analog_face();
         }
 
         last_drawn = t;
         last_state = myState;
+        last_face  = myFace;
         last_alarm_enabled = alarmEnabled;
         return;
     }
 
-    // DIGITAL
+    /* ---------------- DIGITAL ---------------- */
     {
         bool hm_changed = state_changed ||
+                          face_changed  ||
                           (t.hour != last_drawn.hour) ||
                           (t.min  != last_drawn.min);
 
@@ -254,7 +292,7 @@ if (myState == STATE_MENU)
             oledC_DrawString(10, 35, 2, 2, (uint8_t*)buf, text);
         }
 
-        if (state_changed || t.sec != last_drawn.sec)
+        if (state_changed || face_changed || (t.sec != last_drawn.sec))
         {
             char buf[5];
             oledC_DrawRectangle(70, 42, 95, 54, bg);
@@ -265,5 +303,6 @@ if (myState == STATE_MENU)
 
     last_drawn = t;
     last_state = myState;
+    last_face  = myFace;
     last_alarm_enabled = alarmEnabled;
 }
