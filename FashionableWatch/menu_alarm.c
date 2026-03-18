@@ -41,7 +41,7 @@ static MenuEditorState alarm_editor =
     "BACK",
     22, 76, 72, 92,
     34, 80,
-    "ALARM",
+    "",
     0, -1, 0, 0, 0, "",
     true, -1
 };

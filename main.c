@@ -1,30 +1,29 @@
 #include "FashionableWatch/h/watch.h"
 #include "System/system.h"
 #include "FashionableWatch/h/alarm.h"
-
 int main(void)
 {
-    init_all(); //init all hardware (clock, OLED, inputs)
+    init_all();
 
     while (1)
     {
-        pot_update(); //read potentiometer
-        check_inputs(); // handle button presses
-        check_gestures(); // handle accelerometer gestures
-        
-        // runs every sec, triggered by timer interrupt
+        pot_update();
+        check_inputs();
+        check_gestures();
+
         if (g_tick_1s)
         {
-            g_tick_1s = false; // reset the flag
-            alarm_update_1s(); // update alarm logic
-            g_force_redraw = true; // request screen refresh
+            g_tick_1s = false;
+            alarm_update_1s();
+            update_display();   // top bar / clock updates
         }
-        // redraw screen only when needed to avoid flicker
+
         if (g_force_redraw)
         {
-            update_display(); 
-            g_force_redraw = false; // reset redraw request
+            update_display();   // menu movement / edits / page changes
+            g_force_redraw = false;
         }
     }
+
     return 0;
 }

@@ -32,7 +32,7 @@ static MenuEditorState date_editor =
     "BACK",
     25, 80, 70, 95,
     35, 84,
-    "SET DATE",
+    "",
     0, -1, 0, 0, 0, "",
     true, -1
 };

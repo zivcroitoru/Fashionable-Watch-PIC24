@@ -75,8 +75,7 @@ static void draw_menu_top_bar(const WatchTime* t, bool force)
     /* Left title area */
     if (force || page_changed)
     {
-        oledC_DrawRectangle(0, 0, 35, 20, bg);
-
+        oledC_DrawRectangle(0, 0, 42, 20, bg);
         switch (page)
         {
             case MENU_PAGE_MAIN:
