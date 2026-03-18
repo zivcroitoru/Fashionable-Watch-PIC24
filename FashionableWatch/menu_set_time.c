@@ -50,8 +50,8 @@ static MenuEditorState time_editor =
     time_fields,
     3,                  // Hour, Min, Sec
     "BACK",
-    25, 80, 70, 95,
-    35, 84,
+    68, 80, 95, 95,
+    70, 84,
     "",
 
     // Internal state

@@ -39,8 +39,8 @@ static MenuEditorState alarm_editor =
     alarm_fields,
     3,
     "BACK",
-    22, 76, 72, 92,
-    34, 80,
+    68, 80, 95, 95,
+    70, 84,
     "",
     0, -1, 0, 0, 0, "",
     true, -1

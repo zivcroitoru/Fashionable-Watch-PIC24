@@ -8,6 +8,13 @@
 #define COLOR_TEXT 0xFFFF
 #define COLOR_BG   0x0000
 
+#define SET_X1  2
+#define SET_Y1  84
+#define SET_X2  28
+#define SET_Y2  95
+#define SET_TX  2
+#define SET_TY  85
+
 static void draw_box(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, uint16_t color)
 {
     oledC_DrawLine(x1, y1, x2, y1, 1, color);
@@ -96,11 +103,15 @@ bool menu_editor_update_from_pot(MenuEditorState* state, uint16_t pot_value, int
 
     field = &state->fields[cursor];
 
-    // Cursor moved -> take new starting point
+    // Cursor moved -> save new start point for smooth editing
     if (cursor != state->last_cursor) {
         state->last_cursor = cursor;
         state->pot_start_val = pot_value;
         state->value_start_val = field->edit_value;
+
+        state->msg_timer = 0;
+        state->confirm_msg = "";
+
         return true;
     }
 
@@ -148,7 +159,7 @@ void menu_editor_on_select(MenuEditorState* state, int8_t cursor, bool* request_
         field->edit_value = field->edit_value ? 0 : 1;
         changed = true;
     } else {
-        // For range fields, only show "updated" if value really changed
+        // Only show SET if value actually changed
         if (*(field->value_ptr) != field->edit_value) {
             changed = true;
         }
@@ -156,8 +167,8 @@ void menu_editor_on_select(MenuEditorState* state, int8_t cursor, bool* request_
 
     if (changed) {
         *(field->value_ptr) = field->edit_value;
-        state->confirm_msg = "updated";
-        state->msg_timer = 100;
+        state->confirm_msg = "SET";
+        state->msg_timer = 150;
     }
 }
 
@@ -171,7 +182,7 @@ void menu_editor_draw(MenuEditorState* state, int8_t cursor, volatile bool* forc
         menu_editor_init(state);
     }
 
-    // First full draw
+    // First full draw of the editor area
     if (state->first_draw) {
         oledC_DrawRectangle(0, 24, 95, 95, COLOR_BG);
 
@@ -189,30 +200,26 @@ void menu_editor_draw(MenuEditorState* state, int8_t cursor, volatile bool* forc
         state->first_draw = false;
     }
 
-    // Refresh values only when asked
+    // Refresh field values only when needed
     if (*force_redraw) {
         for (i = 0; i < state->field_count; i++) {
             draw_field_value(&state->fields[i]);
         }
     }
 
-    // Show message
+    // Keep SET visible while timer is active
     if (state->msg_timer > 0) {
-        if (state->msg_timer == 100) {
-            oledC_DrawRectangle(5, 65, 95, 75, COLOR_BG);
-            oledC_DrawString(5, 65, 1, 1, (uint8_t*)state->confirm_msg, COLOR_TEXT);
-        }
-
+        oledC_DrawRectangle(SET_X1, SET_Y1, SET_X2, SET_Y2, COLOR_BG);
+        oledC_DrawString(SET_TX, SET_TY, 1, 1, (uint8_t*)state->confirm_msg, COLOR_TEXT);
         state->msg_timer--;
-
-        if (state->msg_timer == 0) {
-            oledC_DrawRectangle(5, 65, 95, 75, COLOR_BG);
-        }
+    } else {
+        oledC_DrawRectangle(SET_X1, SET_Y1, SET_X2, SET_Y2, COLOR_BG);
     }
 
-    // Cursor box
+    // Redraw selection box only when cursor changes
     if (cursor != state->last_drawn_box) {
-        // Erase old box
+
+        // Erase old selection box
         if (state->last_drawn_box >= 0) {
             if (state->last_drawn_box < state->field_count) {
                 MenuEditField* oldf = &state->fields[state->last_drawn_box];
@@ -223,7 +230,7 @@ void menu_editor_draw(MenuEditorState* state, int8_t cursor, volatile bool* forc
             }
         }
 
-        // Draw new box
+        // Draw new selection box
         if (cursor < state->field_count) {
             MenuEditField* current = &state->fields[cursor];
             draw_box(current->x1, current->y1, current->x2, current->y2, COLOR_TEXT);

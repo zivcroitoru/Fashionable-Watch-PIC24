@@ -192,7 +192,7 @@ void update_display(void)
             g_force_redraw = true;
         }
 
-        draw_menu_top_bar(&t, entering_menu);
+        draw_menu_top_bar(&t, entering_menu || g_force_redraw);
 
         if (g_force_redraw)
         {
@@ -240,13 +240,17 @@ void update_display(void)
         }
     }
 
-    /* AM / PM */
-    if (state_changed || face_changed || (t.hour != last_drawn.hour))
+    /* AM / PM - only in 12H mode */
+    if (state_changed || face_changed || (t.hour != last_drawn.hour) || g_force_redraw)
     {
         oledC_DrawRectangle(2, 84, 20, 94, bg);
-        oledC_DrawString(2, 84, 1, 1,
-                         (uint8_t*)((t.hour < 12) ? "am" : "pm"),
-                         text);
+
+        if (myFormat == TIME_12H)
+        {
+            oledC_DrawString(2, 84, 1, 1,
+                             (uint8_t*)((t.hour < 12) ? "am" : "pm"),
+                             text);
+        }
     }
 
     /* Date */
