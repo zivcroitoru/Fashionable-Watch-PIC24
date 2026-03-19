@@ -4,6 +4,9 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+/* Preview getter from menu_set_time.c */
+void menu_set_time_get_preview(WatchTime* t);
+
 extern bool alarmEnabled;
 
 /* 
@@ -63,19 +66,27 @@ static void draw_menu_top_bar(const WatchTime* t, bool force)
     uint16_t bg   = 0x0000;
     uint16_t text = 0xFFFF;
     MenuPage page = menu_get_current_page();
+    WatchTime shown_time = *t;
+
+    /* On SET TIME page, show the temporary edited values instead of real now */
+    if (page == MENU_PAGE_SET_TIME)
+    {
+        menu_set_time_get_preview(&shown_time);
+    }
 
     bool page_changed  = (page != last_title_page);
     bool alarm_changed = (alarmEnabled != last_alarm_enabled);
     bool hm_changed    = force ||
-                         (t->hour != last_drawn.hour) ||
-                         (t->min  != last_drawn.min);
+                         (shown_time.hour != last_drawn.hour) ||
+                         (shown_time.min  != last_drawn.min);
     bool sec_changed   = force ||
-                         (t->sec  != last_drawn.sec);
+                         (shown_time.sec  != last_drawn.sec);
 
     /* Left title area */
     if (force || page_changed)
     {
         oledC_DrawRectangle(0, 0, 42, 20, bg);
+
         switch (page)
         {
             case MENU_PAGE_MAIN:
@@ -137,7 +148,7 @@ static void draw_menu_top_bar(const WatchTime* t, bool force)
     {
         char buf[6];
         oledC_DrawRectangle(46, 8, 77, 18, bg);
-        sprintf(buf, "%02d:%02d", get_display_hour(t->hour), t->min);
+        sprintf(buf, "%02d:%02d", get_display_hour(shown_time.hour), shown_time.min);
         oledC_DrawString(46, 8, 1, 1, (uint8_t*)buf, text);
     }
 
@@ -146,9 +157,14 @@ static void draw_menu_top_bar(const WatchTime* t, bool force)
     {
         char buf[4];
         oledC_DrawRectangle(76, 8, 94, 18, bg);
-        sprintf(buf, ":%02d", t->sec);
+        sprintf(buf, ":%02d", shown_time.sec);
         oledC_DrawString(76, 8, 1, 1, (uint8_t*)buf, text);
     }
+
+    /* Save only what we actually showed in the top bar */
+    last_drawn.hour = shown_time.hour;
+    last_drawn.min  = shown_time.min;
+    last_drawn.sec  = shown_time.sec;
 }
 
 void update_display(void)
@@ -188,6 +204,11 @@ void update_display(void)
             menu_reset_draw_cache();
             last_title_page = (MenuPage)255;
 
+            /* Invalidate shown top-bar time so first menu draw is forced cleanly */
+            last_drawn.hour = 255;
+            last_drawn.min  = 255;
+            last_drawn.sec  = 255;
+
             /* Force one full menu draw after entering */
             g_force_redraw = true;
         }
@@ -200,7 +221,6 @@ void update_display(void)
             g_force_redraw = false;
         }
 
-        last_drawn = t;
         last_state = myState;
         last_face  = myFace;
         return;
