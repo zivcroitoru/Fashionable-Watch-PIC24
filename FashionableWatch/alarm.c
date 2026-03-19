@@ -18,6 +18,9 @@ static bool alarm_ringing = false;         // is alarm currently active
 static uint8_t alarm_seconds_left = 0;     // how long alarm should keep ringing
 static bool alarm_inverse_phase = false;   // for blinking effect
 
+// Prevent retriggering many times during the same matching minute
+static bool alarm_triggered_this_minute = false;
+
 // Switch OLED between inverse and normal mode
 static void alarm_set_inverse(bool inverse)
 {
@@ -55,6 +58,9 @@ void alarm_stop(void)
     alarm_seconds_left = 0;
     alarm_inverse_phase = false;
 
+    // ? Disable alarm after it finishes
+    alarmEnabled = false;
+
     // Return display to normal mode
     alarm_set_inverse(false);
 
@@ -66,23 +72,29 @@ void alarm_stop(void)
         myState = STATE_CLOCK;
     }
 
-    g_force_redraw = true; // redraw normal UI after alarm ends
+    g_force_redraw = true;
 }
 
 // Called once per second
 void alarm_update_1s(void)
 {
+    // Reset minute trigger once time no longer matches
+    if (now.hour != alarmTime.hour || now.min != alarmTime.min) {
+        alarm_triggered_this_minute = false;
+    }
+
     // If not ringing yet, check if it's time to start
     if (!alarm_ringing)
     {
         if (alarmEnabled &&
             now.hour == alarmTime.hour &&
             now.min  == alarmTime.min &&
-            now.sec  == 0)
+            !alarm_triggered_this_minute)
         {
             alarm_ringing = true;
-            alarm_seconds_left = 20;      // ring for 20 seconds
-            alarm_inverse_phase = true;   // start inverted
+            alarm_seconds_left = 20;        // ring for 20 seconds
+            alarm_inverse_phase = true;     // start inverted
+            alarm_triggered_this_minute = true;
             myState = STATE_ALARM_RINGING;
 
             // Draw screen only once
