@@ -15,14 +15,9 @@ int main(void)
         {
             g_tick_1s = false;
             alarm_update_1s();
-            update_display();   // top bar / clock updates
         }
 
-        if (g_force_redraw)
-        {
-            update_display();   // menu movement / edits / page changes
-            g_force_redraw = false;
-        }
+        update_display();
     }
 
     return 0;

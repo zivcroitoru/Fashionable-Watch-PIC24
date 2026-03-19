@@ -92,10 +92,7 @@ void menu_set_date_on_select(uint8_t index)
 /* Update values from potentiometer */
 void menu_set_date_update_from_pot(void)
 {
-    if (menu_editor_update_from_pot(&date_editor, g_pot_value, menu_get_cursor()))
-    {
-        g_force_redraw = true;
-    }
+    (void)menu_editor_update_from_pot(&date_editor, g_pot_value, menu_get_cursor());
 }
 
 /* Custom draw (numbers + labels) */

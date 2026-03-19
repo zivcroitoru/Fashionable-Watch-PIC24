@@ -12,9 +12,9 @@
 #include <xc.h>
 
 // Pot -> menu handlers
-void menu_set_time_update_from_pot(void);
-void menu_set_date_update_from_pot(void);
-void menu_alarm_update_from_pot(void);
+bool menu_set_time_update_from_pot(void);
+bool menu_set_date_update_from_pot(void);
+bool menu_alarm_update_from_pot(void);
 
 // I2C driver funcs
 void i2c1_driver_open(void);
@@ -119,11 +119,11 @@ static uint8_t accel_init(void)
 
 /**
  * Reads the analog Potentiometer and updates the UI if the change is significant.
- */
-void pot_update(void)
+ */void pot_update(void)
 {
     static uint16_t prevVal = 0;
     uint16_t currVal;
+    bool changed = false;
 
     // Trigger manual ADC conversion
     AD1CON1 |= (1 << 1);       // SAMP = 1 (Start sampling)
@@ -137,29 +137,38 @@ void pot_update(void)
 
     currVal = ADC1BUF0;
 
-    // Deadzone/Hysteresis check: only update if value moved more than +/- 5
-    // Prevents "jittering" on the screen due to electrical noise
+    // Deadzone / hysteresis:
+    // only react if the pot moved enough to matter
     if ((currVal > (prevVal + 5)) || (currVal + 5 < prevVal))
     {
         g_pot_value = currVal;
         prevVal = currVal;
 
-        // Route the pot value to the correct submenu
+        // Route pot movement to the active menu page
         if (myState == STATE_MENU)
         {
             switch (menu_get_current_page())
             {
                 case MENU_PAGE_SET_TIME:
-                    menu_set_time_update_from_pot();
+                    changed = menu_set_time_update_from_pot();
                     break;
+
                 case MENU_PAGE_SET_DATE:
-                    menu_set_date_update_from_pot();
+                    changed = menu_set_date_update_from_pot();
                     break;
+
                 case MENU_PAGE_ALARM:
-                    menu_alarm_update_from_pot();
+                    changed = menu_alarm_update_from_pot();
                     break;
+
                 default:
                     break;
+            }
+
+            // Ask main loop for a redraw only if something actually changed
+            if (changed)
+            {
+                g_force_redraw = true;
             }
         }
     }

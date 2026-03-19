@@ -104,6 +104,19 @@ static bool menu_set_time_apply_changes(void)
     return changed;
 }
 
+/*
+ * Live preview getter for the top bar.
+ */
+void menu_set_time_get_preview(WatchTime* t)
+{
+    if (!t) return;
+
+    *t = now;          // keep date/month/year/weekday/etc
+    t->hour = edit_hour;
+    t->min  = edit_min;
+    t->sec  = edit_sec;
+}
+
 void menu_set_time_on_select(uint8_t index)
 {
     bool go_back = false;
@@ -133,11 +146,15 @@ void menu_set_time_on_select(uint8_t index)
     g_force_redraw = true;
 }
 
-void menu_set_time_update_from_pot(void)
+bool menu_set_time_update_from_pot(void)
 {
-    if (menu_editor_update_from_pot(&time_editor, g_pot_value, menu_get_cursor())) {
+    bool changed = menu_editor_update_from_pot(&time_editor, g_pot_value, menu_get_cursor());
+
+    if (changed) {
         g_force_redraw = true;
     }
+
+    return changed;
 }
 
 void menu_set_time_custom_draw(void)

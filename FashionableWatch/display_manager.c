@@ -241,7 +241,7 @@ void update_display(void)
     }
 
     /* AM / PM - only in 12H mode */
-    if (state_changed || face_changed || (t.hour != last_drawn.hour) || g_force_redraw)
+    if (state_changed || face_changed || (t.hour != last_drawn.hour))
     {
         oledC_DrawRectangle(2, 84, 20, 94, bg);
 

@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+
 typedef enum
 {
     FIELD_TYPE_RANGE,
@@ -65,6 +66,7 @@ typedef struct
 
     bool first_draw;
     int8_t last_drawn_box;
+    bool values_dirty;
 } MenuEditorState;
 
 /* setup/reset */
