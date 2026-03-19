@@ -301,7 +301,6 @@ fail:
 
 /**
  * Checks if the watch is facing the floor (Z-axis negative).
- * Useful for "raise-to-wake" or "flip-to-mute" features.
  */
 uint8_t accel_is_face_down(void)
 {
