@@ -59,13 +59,34 @@ static MenuEditorState alarm_editor =
     true, -1, true
 };
 
+static bool alarm_cursor_is_off(int8_t cursor)
+{
+    return (alarmEnabled && cursor == 0);
+}
+
+static bool alarm_cursor_is_back(int8_t cursor)
+{
+    return alarmEnabled ? (cursor == 3) : (cursor == 2);
+}
+
+static int8_t alarm_menu_to_editor_index(int8_t cursor)
+{
+    if (alarmEnabled)
+    {
+        if (cursor == 1) return 0;
+        if (cursor == 2) return 1;
+    }
+    else
+    {
+        if (cursor == 0) return 0;
+        if (cursor == 1) return 1;
+    }
+
+    return -1;
+}
+
 uint8_t menu_alarm_get_count(void)
 {
-    // If alarm is enabled:
-    // OFF + Hour + Min + BACK = 4
-    //
-    // If alarm is disabled:
-    // Hour + Min + BACK = 3
     return alarmEnabled ? 4 : 3;
 }
 
@@ -83,125 +104,78 @@ void menu_alarm_reset_state(void)
 void menu_alarm_on_select(uint8_t index)
 {
     bool go_back = false;
+    int8_t editor_index = alarm_menu_to_editor_index((int8_t)index);
 
-    if (alarmEnabled) {
-        // Enabled layout:
-        // 0 = OFF
-        // 1 = Hour
-        // 2 = Min
-        // 3 = BACK
+    if (alarm_cursor_is_off((int8_t)index))
+    {
+        alarmEnabled = false;
+        menu_set_cursor(0);
+        g_force_redraw = true;
+        return;
+    }
 
-        if (index == 0) {
-            alarmEnabled = false;
+    if (alarm_cursor_is_back((int8_t)index))
+    {
+        menu_editor_reset(&alarm_editor);
+        menu_set_current_page(MENU_PAGE_MAIN);
+        g_force_redraw = true;
+        return;
+    }
 
-            // After OFF disappears, valid items are:
-            // 0 = Hour, 1 = Min, 2 = BACK
-            menu_set_cursor(0);
-            g_force_redraw = true;
-            return;
-        }
-
-        if (index == 3) {
-            menu_editor_reset(&alarm_editor);
-            menu_set_current_page(MENU_PAGE_MAIN);
-            g_force_redraw = true;
-            return;
-        }
-
-        // 1 -> Hour(editor 0), 2 -> Min(editor 1)
-        menu_editor_on_select(&alarm_editor, index - 1, &go_back);
-
-        if (index == 1 || index == 2) {
-            alarmEnabled = true;
-        }
-    } else {
-        // Disabled layout:
-        // 0 = Hour
-        // 1 = Min
-        // 2 = BACK
-
-        if (index == 2) {
-            menu_editor_reset(&alarm_editor);
-            menu_set_current_page(MENU_PAGE_MAIN);
-            g_force_redraw = true;
-            return;
-        }
-
-        // 0 -> Hour(editor 0), 1 -> Min(editor 1)
-        menu_editor_on_select(&alarm_editor, index, &go_back);
-
-        // Confirming Hour or Min enables alarm automatically
-        if (index == 0 || index == 1) {
-            alarmEnabled = true;
-        }
+    if (editor_index >= 0)
+    {
+        menu_editor_on_select(&alarm_editor, editor_index, &go_back);
+        alarmEnabled = true;
     }
 
     menu_set_cursor((index + 1) % menu_alarm_get_count());
     g_force_redraw = true;
 }
 
-void menu_alarm_update_from_pot(void)
+bool menu_alarm_update_from_pot(void)
 {
-    int8_t cursor = menu_get_cursor();
+    int8_t editor_index = alarm_menu_to_editor_index(menu_get_cursor());
 
-    if (alarmEnabled) {
-        // Enabled layout:
-        // 0 = OFF, 1 = Hour, 2 = Min, 3 = BACK
-        if (cursor == 1 || cursor == 2) {
-            (void)menu_editor_update_from_pot(&alarm_editor, g_pot_value, cursor - 1);
-        }
-    } else {
-        // Disabled layout:
-        // 0 = Hour, 1 = Min, 2 = BACK
-        if (cursor == 0 || cursor == 1) {
-            (void)menu_editor_update_from_pot(&alarm_editor, g_pot_value, cursor);
-        }
+    if (editor_index < 0)
+    {
+        return false;
     }
+
+    return menu_editor_update_from_pot(&alarm_editor, g_pot_value, editor_index);
 }
 
 void menu_alarm_custom_draw(void)
 {
     int8_t cursor = menu_get_cursor();
+    int8_t editor_index = alarm_menu_to_editor_index(cursor);
 
-    if (alarmEnabled) {
-        // Enabled layout:
-        // 0 = OFF
-        // 1 = Hour -> editor 0
-        // 2 = Min  -> editor 1
-        // 3 = BACK -> editor back
+    if (editor_index >= 0)
+    {
+        menu_editor_draw(&alarm_editor, editor_index, &g_force_redraw);
+    }
+    else
+    {
+        menu_editor_draw(&alarm_editor, alarm_editor.field_count, &g_force_redraw);
+    }
 
-        if (cursor == 1) {
-            menu_editor_draw(&alarm_editor, 0, &g_force_redraw);
-        } else if (cursor == 2) {
-            menu_editor_draw(&alarm_editor, 1, &g_force_redraw);
-        } else {
-            menu_editor_draw(&alarm_editor, alarm_editor.field_count, &g_force_redraw);
-        }
-
-        // Draw OFF button
+    if (alarmEnabled)
+    {
+        /* Draw OFF button */
         oledC_DrawRectangle(OFF_X1 + 2, OFF_Y1 + 2, OFF_X2 - 2, OFF_Y2 - 2, COLOR_BG);
         oledC_DrawString(OFF_TX, OFF_TY, 1, 1, (uint8_t*)"OFF", COLOR_TEXT);
 
-        if (cursor == 0) {
+        if (alarm_cursor_is_off(cursor))
+        {
             draw_box(OFF_X1, OFF_Y1, OFF_X2, OFF_Y2, COLOR_TEXT);
-        } else {
+        }
+        else
+        {
             draw_box(OFF_X1, OFF_Y1, OFF_X2, OFF_Y2, COLOR_BG);
         }
-    } else {
-        // Disabled layout:
-        // 0 = Hour -> editor 0
-        // 1 = Min  -> editor 1
-        // 2 = BACK -> editor back
-
-        if (cursor == 0) {
-            menu_editor_draw(&alarm_editor, 0, &g_force_redraw);
-        } else if (cursor == 1) {
-            menu_editor_draw(&alarm_editor, 1, &g_force_redraw);
-        } else {
-            menu_editor_draw(&alarm_editor, alarm_editor.field_count, &g_force_redraw);
-        }
-
-        // Clear OFF area when alarm is disabled
+    }
+    else
+    {
+        /* Clear OFF area when alarm is disabled */
         oledC_DrawRectangle(OFF_X1, OFF_Y1, OFF_X2, OFF_Y2, COLOR_BG);
     }
 }

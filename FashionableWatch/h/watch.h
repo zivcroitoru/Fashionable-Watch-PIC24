@@ -6,6 +6,7 @@
 #include "../../oledDriver/oledC.h"
 #include "../../oledDriver/oledC_colors.h"
 #include "../../oledDriver/oledC_shapes.h"
+
 typedef struct
 {
     uint8_t sec;
@@ -45,8 +46,6 @@ extern volatile WatchTime now;
 extern volatile bool g_force_redraw;
 extern volatile bool g_tick_1s;
 extern volatile uint32_t ms_ticks;
-
-extern uint8_t analogTheme;
 
 void init_all(void);
 void pot_update(void);

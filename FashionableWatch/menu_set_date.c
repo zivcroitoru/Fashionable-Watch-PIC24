@@ -14,7 +14,7 @@ extern volatile bool g_force_redraw;
  * Date fields in DD / MM order
  * Each field:
  * - pointer to actual value in 'now'
- * - range (day: 1?31, month: 1?12)
+ * - range (day: 1..31, month: 1..12)
  * - box position
  * - text position + scale (2x for bigger numbers)
  */
@@ -23,8 +23,8 @@ static MenuEditField date_fields[] =
     {
         "Day", FIELD_TYPE_RANGE, (uint8_t*)&now.day, 0,
         1, 31, 15,
-        12, 30, 40, 60,   // box
-        14, 35, 2, 2      // big number
+        12, 30, 40, 60,
+        14, 35, 2, 2
     },
     {
         "Month", FIELD_TYPE_RANGE, (uint8_t*)&now.month, 0,
@@ -85,14 +85,13 @@ void menu_set_date_on_select(uint8_t index)
 
     /* Move cursor to next item */
     menu_set_cursor((index + 1) % menu_set_date_get_count());
-
     g_force_redraw = true;
 }
 
 /* Update values from potentiometer */
-void menu_set_date_update_from_pot(void)
+bool menu_set_date_update_from_pot(void)
 {
-    (void)menu_editor_update_from_pot(&date_editor, g_pot_value, menu_get_cursor());
+    return menu_editor_update_from_pot(&date_editor, g_pot_value, menu_get_cursor());
 }
 
 /* Custom draw (numbers + labels) */

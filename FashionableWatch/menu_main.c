@@ -1,4 +1,3 @@
-
 #include "h/menu.h"
 #include "h/menu_pages.h"
 
@@ -19,6 +18,7 @@ const char* menu_main_get_item(uint8_t index)
         default: return "";
     }
 }
+
 void menu_main_on_select(uint8_t index)
 {
     switch (index)
@@ -33,8 +33,6 @@ void menu_main_on_select(uint8_t index)
 
         case 2:
             menu_set_current_page(MENU_PAGE_SET_TIME);
-            menu_set_cursor(0);              // start on hours
-            menu_set_time_reset_state();     // reset edit state
             break;
 
         case 3:

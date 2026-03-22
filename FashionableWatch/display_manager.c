@@ -8,11 +8,9 @@
 void menu_set_time_get_preview(WatchTime* t);
 
 extern bool alarmEnabled;
+extern WatchTime alarmTime;
+uint8_t get_display_hour(uint8_t hour24);
 
-/* 
- * Cache of the last thing we actually drew.
- * Using these lets us redraw only what changed instead of refreshing everything.
- */
 static WatchTime last_drawn = {255,255,255,255,255};
 static AppState  last_state = (AppState)255;
 static FaceType  last_face = (FaceType)255;
@@ -21,11 +19,10 @@ static MenuPage  last_title_page = (MenuPage)255;
 
 /*
  * Small alarm/clock icon that appears near the top.
- * It is tiny, so drawing pixel-by-pixel is simple and predictable.
  */
 static void draw_alarm_icon(uint16_t color)
 {
-    int x = 36;
+    int x = 88;
     int y = 5;
 
     oledC_DrawPoint(x+2, y+0, color);
@@ -110,7 +107,8 @@ static void draw_menu_top_bar(const WatchTime* t, bool force)
                 break;
 
             case MENU_PAGE_DISPLAY:
-                oledC_DrawString(2, 6, 1, 1, (uint8_t*)"DISPLAY", text);
+                oledC_DrawString(2, 2, 1, 1, (uint8_t*)"DIS", text);
+                oledC_DrawString(2, 11, 1, 1, (uint8_t*)"PLAY", text);
                 break;
 
             case MENU_PAGE_FORMAT:
@@ -133,7 +131,7 @@ static void draw_menu_top_bar(const WatchTime* t, bool force)
     /* Alarm icon area */
     if (force || alarm_changed)
     {
-        oledC_DrawRectangle(36, 5, 43, 12, bg);
+        oledC_DrawRectangle(88, 5, 95, 12, bg);
 
         if (alarmEnabled)
         {
@@ -147,18 +145,18 @@ static void draw_menu_top_bar(const WatchTime* t, bool force)
     if (hm_changed)
     {
         char buf[6];
-        oledC_DrawRectangle(46, 8, 77, 18, bg);
+        oledC_DrawRectangle(40, 8, 71, 18, bg);
         sprintf(buf, "%02d:%02d", get_display_hour(shown_time.hour), shown_time.min);
-        oledC_DrawString(46, 8, 1, 1, (uint8_t*)buf, text);
+        oledC_DrawString(40, 8, 1, 1, (uint8_t*)buf, text);
     }
 
     /* Seconds */
     if (sec_changed)
     {
         char buf[4];
-        oledC_DrawRectangle(76, 8, 94, 18, bg);
+        oledC_DrawRectangle(70, 8, 87, 18, bg);
         sprintf(buf, ":%02d", shown_time.sec);
-        oledC_DrawString(76, 8, 1, 1, (uint8_t*)buf, text);
+        oledC_DrawString(70, 8, 1, 1, (uint8_t*)buf, text);
     }
 
     /* Save only what we actually showed in the top bar */
@@ -176,18 +174,32 @@ void update_display(void)
     bool state_changed = (myState != last_state);
     bool face_changed  = (myFace  != last_face);
 
-    /*
-     * If the alarm is currently active, let the alarm module own the screen.
-     * We still update cache values so returning to the normal screen is smoother.
-     */
-    if (alarm_is_ringing())
+    static bool alarm_screen_drawn = false;
+
+    if (myState == STATE_ALARM_RINGING)
     {
-        alarm_draw_if_active();
+        if (!alarm_screen_drawn)
+        {
+            char buf[16];
+
+            oledC_DrawRectangle(0, 0, 95, 95, 0x0000);
+            sprintf(buf, "%02u:%02u", alarmTime.hour, alarmTime.min);
+
+            oledC_DrawString(18, 28, 2, 2, (uint8_t*)"ALARM", 0xFFFF);
+            oledC_DrawString(24, 56, 2, 2, (uint8_t*)buf, 0xFFFF);
+
+            alarm_screen_drawn = true;
+        }
+
         last_state = myState;
         last_face = myFace;
         last_alarm_enabled = alarmEnabled;
         last_drawn = t;
         return;
+    }
+    else
+    {
+        alarm_screen_drawn = false;
     }
 
     /* ---------------- MENU ---------------- */
@@ -252,7 +264,7 @@ void update_display(void)
     if (state_changed || face_changed || (alarmEnabled != last_alarm_enabled))
     {
         /* Clear the same area where the icon is actually drawn */
-        oledC_DrawRectangle(36, 5, 43, 12, bg);
+        oledC_DrawRectangle(88, 5, 95, 12, bg);
 
         if (alarmEnabled)
         {

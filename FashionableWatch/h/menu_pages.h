@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+
 // Main
 uint8_t menu_main_get_count(void);
 const char* menu_main_get_item(uint8_t index);
@@ -28,15 +29,23 @@ uint8_t menu_set_time_get_count(void);
 const char* menu_set_time_get_item(uint8_t index);
 void menu_set_time_on_select(uint8_t index);
 bool menu_set_time_update_from_pot(void);
+void menu_set_time_reset_state(void);
+void menu_set_time_custom_draw(void);
 
 // Set Date
 uint8_t menu_set_date_get_count(void);
 const char* menu_set_date_get_item(uint8_t index);
 void menu_set_date_on_select(uint8_t index);
+bool menu_set_date_update_from_pot(void);
+void menu_set_date_reset_state(void);
+void menu_set_date_custom_draw(void);
 
 // Alarm
 uint8_t menu_alarm_get_count(void);
 const char* menu_alarm_get_item(uint8_t index);
 void menu_alarm_on_select(uint8_t index);
+bool menu_alarm_update_from_pot(void);
+void menu_alarm_reset_state(void);
+void menu_alarm_custom_draw(void);
 
 #endif
