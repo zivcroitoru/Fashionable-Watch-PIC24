@@ -61,7 +61,6 @@ void alarm_update_1s(void)
     {
         if (alarmEnabled &&
             time_matches &&
-            now.sec == 0 &&
             !alarm_triggered_this_minute)
         {
             alarm_ringing = true;

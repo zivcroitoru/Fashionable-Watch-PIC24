@@ -79,6 +79,7 @@ void menu_set_time_reset_state(void)
     edit_sec  = now.sec;
 
     menu_editor_reset(&time_editor);
+    menu_set_cursor(0);   // start on Hour
 }
 
 // Save only if something changed

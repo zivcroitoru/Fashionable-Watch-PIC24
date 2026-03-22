@@ -6,26 +6,28 @@
 
 extern uint8_t analogTheme;
 
+// Returns color by clock part:
+// 0 = marks, 1 = hour hand, 2 = minute hand, 3 = second hand
 static uint16_t get_part_color(uint8_t part) {
-    // part: 0=marks, 1=hour, 2=min, 3=sec
     if (analogTheme == 0) { 
-        if (part == 3) return 0xF800; // Red sec
-        return 0xFFFF;                // White rest
+        if (part == 3) return 0xF800; // red second hand
+        return 0xFFFF;                // white for everything else
     }
     if (analogTheme == 1) { 
-        if (part == 0) return 0x07FF; // Cyan marks
-        if (part == 3) return 0xF81F; // Magenta sec
-        return 0xFFFF;                // White hands
+        if (part == 0) return 0x07FF; // cyan marks
+        if (part == 3) return 0xF81F; // magenta second hand
+        return 0xFFFF;                // white hands
     }
     if (analogTheme == 2) { 
-        if (part == 0) return 0xFFE0; // Yellow marks
-        if (part == 1) return 0xF800; // Red hour
-        if (part == 2) return 0x07E0; // Green min
-        return 0x001F;                // Blue sec
+        if (part == 0) return 0xFFE0; // yellow marks
+        if (part == 1) return 0xF800; // red hour hand
+        if (part == 2) return 0x07E0; // green minute hand
+        return 0x001F;                // blue second hand
     }
     return 0xFFFF;
 }
 
+// Precomputed points around the clock edge for 60 positions
 const uint8_t edge_x[60] = {
     47, 52, 56, 61, 65, 70, 74, 78, 81, 85,
     87, 90, 92, 93, 94, 94, 94, 93, 92, 90,
@@ -44,6 +46,7 @@ const uint8_t edge_y[60] = {
     24, 20, 16, 13, 9, 7, 4, 2, 1, 0
 };
 
+// Gets a point on the hand path based on clock index and hand length percent
 static void point_on_radius(uint8_t index, uint8_t percent, uint8_t *x, uint8_t *y)
 {
     int dx = (int)edge_x[index] - CX;
@@ -53,6 +56,7 @@ static void point_on_radius(uint8_t index, uint8_t percent, uint8_t *x, uint8_t 
     *y = (uint8_t)(CY + ((long)dy * RADIUS * percent) / (47L * 100L));
 }
 
+// Draws a 1-pixel line using Bresenham algorithm
 static void draw_line_pixels(int x0, int y0, int x1, int y1, uint16_t color)
 {
     int dx = (x1 > x0) ? (x1 - x0) : (x0 - x1);
@@ -78,6 +82,7 @@ static void draw_line_pixels(int x0, int y0, int x1, int y1, uint16_t color)
     }
 }
 
+// Draws a thicker line by drawing nearby extra lines
 static void draw_line_thick(int x0, int y0, int x1, int y1, uint8_t width, uint16_t color)
 {
     draw_line_pixels(x0, y0, x1, y1, color);
@@ -95,6 +100,7 @@ static void draw_line_thick(int x0, int y0, int x1, int y1, uint8_t width, uint1
     }
 }
 
+// Draw the small center dot of the clock
 static void draw_center_dot(void)
 {
     uint16_t c = get_part_color(0);
@@ -104,6 +110,7 @@ static void draw_center_dot(void)
     oledC_DrawPoint(CX + 1, CY + 1, c);
 }
 
+// Draw all 60 clock marks around the face
 static void draw_clock_marks(void)
 {
     uint16_t c = get_part_color(0);
@@ -111,6 +118,7 @@ static void draw_clock_marks(void)
     {
         uint8_t sx, sy, ex, ey;
 
+        // Bigger marks every 5 positions
         if (i % 5 == 0) point_on_radius(i, 90, &sx, &sy);
         else point_on_radius(i, 95, &sx, &sy);
 
@@ -119,6 +127,7 @@ static void draw_clock_marks(void)
     }
 }
 
+// Draw one clock hand
 static void draw_hand(uint8_t index, uint8_t percent, uint8_t width, uint16_t color)
 {
     uint8_t ex, ey;
@@ -126,12 +135,14 @@ static void draw_hand(uint8_t index, uint8_t percent, uint8_t width, uint16_t co
     draw_line_thick(CX, CY, (int)ex, (int)ey, width, color);
 }
 
+// Draw the fixed parts of the analog face
 static void draw_face_static(void)
 {
     draw_clock_marks();
     draw_center_dot();
 }
 
+// Update analog clock display
 void update_analog_face(void)
 {
     static uint8_t first_draw = 1;
@@ -143,6 +154,7 @@ void update_analog_face(void)
     uint8_t new_m = now.min;
     uint8_t new_h = (uint8_t)((now.hour % 12) * 5 + (now.min / 12));
 
+    // Full draw on first time or forced refresh
     if (first_draw || g_force_redraw)
     {
         draw_face_static();
@@ -160,6 +172,7 @@ void update_analog_face(void)
         return;
     }
 
+    // No need to redraw if second did not change
     if (new_s == old_s) return;
 
     // Erase old hands with black
@@ -167,11 +180,11 @@ void update_analog_face(void)
     draw_hand(old_m, 80, 1, 0x0000);
     draw_hand(old_s, 90, 1, 0x0000);
 
-    // Restore marks and center
+    // Restore anything the erased hands touched
     draw_clock_marks();
     draw_center_dot();
 
-    // Draw new hands
+    // Draw updated hands
     draw_hand(new_h, 50, 2, get_part_color(1));
     draw_hand(new_m, 80, 1, get_part_color(2));
     draw_hand(new_s, 90, 1, get_part_color(3));

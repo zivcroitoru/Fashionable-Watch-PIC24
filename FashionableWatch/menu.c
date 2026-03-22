@@ -158,29 +158,29 @@ void menu_set_current_page(MenuPage page)
 {
     current_page = page;
 
-    // Reset sub-page states (specific cursor starts or values)
+    // All pages start from the first item
+    menu_cursor_index = 0;
+
+    /* Reset page-specific temporary/editor state */
     switch (page)
     {
         case MENU_PAGE_SET_TIME:
             menu_set_time_reset_state();
-            menu_cursor_index = 1; // Start on hours, not "Back"
             break;
 
         case MENU_PAGE_SET_DATE:
             menu_set_date_reset_state();
-            menu_cursor_index = 0;
             break;
 
         case MENU_PAGE_ALARM:
             menu_alarm_reset_state();
-            menu_cursor_index = 0;
             break;
 
         default:
-            menu_cursor_index = 0;
             break;
     }
 
+    /* Force full redraw for the new page */
     menu_reset_draw_cache();
     g_force_redraw = true;
 }

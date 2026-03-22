@@ -96,9 +96,6 @@ void menu_editor_reset(MenuEditorState* state)
 }
 
 // Update the currently selected field from the potentiometer
-// Important:
-// - this now marks only the editor as dirty
-// - it should not force the whole screen / top bar to redraw
 bool menu_editor_update_from_pot(MenuEditorState* state, uint16_t pot_value, int8_t cursor)
 {
     MenuEditField* field;
@@ -124,7 +121,7 @@ bool menu_editor_update_from_pot(MenuEditorState* state, uint16_t pot_value, int
         state->pot_start_val = pot_value;
         state->value_start_val = field->edit_value;
 
-        // Remove old SET message when switching fields
+        // Remove old SET message
         state->msg_timer = 0;
         state->confirm_msg = "";
 
