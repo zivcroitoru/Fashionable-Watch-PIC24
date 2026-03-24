@@ -174,19 +174,15 @@ Allows adjusting day and month.
 
 ---
 
-## Alarm Configuration
 
-The alarm settings allow the user to configure:
+Alarm Toggle Logic
+Auto-On: Setting the hour/minute automatically toggles the alarm.
 
-```
-Alarm ON/OFF
-Alarm hour
-Alarm minute
-```
+Manual Toggle: Pressing S2 while the "OFF" text is highlighted disables the current alarm.
 
-When an alarm time is configured, the alarm is automatically enabled.
+Visual Indicator: if an alarm was set : Alarm icon is visible in the top right corner.
 
----
+OFF: Alarm icon is disabled.
 
 ## Disable Alarm
 
