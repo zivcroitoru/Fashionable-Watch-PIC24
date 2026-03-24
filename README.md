@@ -271,11 +271,9 @@ Flip the watch to see the changed Display Mode.
 * **Adjust Time:** * Use **Potentiometer** for Hour $\rightarrow$ Press **S2** to confirm.
     * Use **Potentiometer** for Minute $\rightarrow$ Press **S2** to confirm.
 * **Auto-On:** The alarm is now **enabled**, and the icon appears.
-* **Toggle (Optional):** Press **S2** on the "OFF" toggle on-screen to disable it manually.
+* **Disable:** Press **S2** on the "OFF" toggle on-screen to disable it manually.
 
 ---
 
-## Disable Alarm
-* **Action:** Select the "Disable Alarm" option in the menu.
-* **Result:** Turns the alarm **OFF** and removes the icon from the display.
+
 
