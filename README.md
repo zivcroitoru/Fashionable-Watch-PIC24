@@ -258,19 +258,24 @@ Select "Analog"
 Press S2 to enter the theme submenu
 Choose a theme (Classic / Cyberpunk / Rainbow)
 Press S2 to confirm
+Flip the watch to see the changed Display Mode.
 ```
 
 ---
 
+
 ## Set Alarm
+* **Enter Menu:** Hold **S1**.
+* **Navigate:** Click **S1** to find "Alarm".
+* **Enter:** Press **S2**.
+* **Adjust Time:** * Use **Potentiometer** for Hour $\rightarrow$ Press **S2** to confirm.
+    * Use **Potentiometer** for Minute $\rightarrow$ Press **S2** to confirm.
+* **Auto-On:** The alarm is now **enabled**, and the icon appears.
+* **Toggle (Optional):** Press **S2** on the "OFF" toggle on-screen to disable it manually.
 
-```
-Hold S1 to enter the menu
-with S1 clicks, navigate to "Alarm"
-Press S2
-Set the alarm on with S2
-Adjust hour using the potentiometer, Press S2 to confirm
-Adjust minute, Press S2 to confirm
-```
+---
 
+## Disable Alarm
+* **Action:** Select the "Disable Alarm" option in the menu.
+* **Result:** Turns the alarm **OFF** and removes the icon from the display.
 
